@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "timestamp": "2026-02-27T06:52:20.073393Z",
+    "project": "risk_engine",
+    "category": "milestone",
+    "content": "Project initialized: Bayesian Risk Engine v1.0",
+    "metadata": {}
+  },
+  {
+    "id": 2,
+    "timestamp": "2026-02-27T06:52:20.073706Z",
+    "project": "risk_engine",
+    "category": "build_log",
+    "content": "Backend: FastAPI + PyMC ADVI inference engine built",
+    "metadata": {}
+  },
+  {
+    "id": 3,
+    "timestamp": "2026-02-27T06:52:20.074121Z",
+    "project": "risk_engine",
+    "category": "build_log",
+    "content": "Frontend: React + Tailwind dashboard with risk dial built",
+    "metadata": {}
+  },
+  {
+    "id": 4,
+    "timestamp": "2026-02-27T06:52:20.074381Z",
+    "project": "risk_engine",
+    "category": "build_log",
+    "content": "Data Lake: 10 preset events across 5 categories",
+    "metadata": {}
+  },
+  {
+    "id": 5,
+    "timestamp": "2026-02-27T06:52:20.074609Z",
+    "project": "risk_engine",
+    "category": "decision",
+    "content": "Architecture decision: ADVI over MCMC for sub-second inference on convex models",
+    "metadata": {}
+  },
+  {
+    "id": 6,
+    "timestamp": "2026-02-27T06:52:20.074798Z",
+    "project": "risk_engine",
+    "category": "decision",
+    "content": "Architecture decision: LogNormal priors for positivity + multiplicative uncertainty",
+    "metadata": {}
+  },
+  {
+    "id": 7,
+    "timestamp": "2026-02-27T06:56:16.398225Z",
+    "project": "risk_engine",
+    "category": "doc_update",
+    "content": "Triple-tier documentation generated successfully.",
+    "metadata": {}
+  }
+]

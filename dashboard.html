@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bayesian Risk Engine v1.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
+
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .risk-gradient {
+            background: linear-gradient(90deg, #10B981 0%, #F59E0B 50%, #EF4444 100%);
+        }
+        .risk-gradient-vertical {
+            background: linear-gradient(180deg, #EF4444 0%, #F59E0B 50%, #10B981 100%);
+        }
+
+        .glow-green { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+        .glow-red   { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+        .glow-amber { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+
+        .card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+            backdrop-filter: blur(10px);
+        }
+
+        .dial-needle {
+            transition: left 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .pulse-dot {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .slide-in {
+            animation: slideIn 0.4s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .risk-badge-negligible { background: #065f46; color: #6ee7b7; }
+        .risk-badge-very-low   { background: #064e3b; color: #34d399; }
+        .risk-badge-low        { background: #1e3a5f; color: #60a5fa; }
+        .risk-badge-moderate   { background: #451a03; color: #fbbf24; }
+        .risk-badge-high       { background: #431407; color: #fb923c; }
+        .risk-badge-very-high  { background: #450a0a; color: #f87171; }
+        .risk-badge-critical   { background: #3b0000; color: #ff4444; border: 1px solid #ff4444; }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+
+        .matrix-bg {
+            background: radial-gradient(ellipse at top, #0d1f2d 0%, #0a0f1a 100%);
+        }
+    </style>
+</head>
+<body class="matrix-bg text-slate-100 min-h-screen">
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+const API_BASE = '';
+
+// ─── RISK LEVEL CONFIG ─────────────────────────────────────────
+const RISK_CONFIG = {
+    "NEGLIGIBLE": { color: "#10B981", badge: "risk-badge-negligible", icon: "●" },
+    "VERY LOW":   { color: "#34D399", badge: "risk-badge-very-low",   icon: "◐" },
+    "LOW":        { color: "#60A5FA", badge: "risk-badge-low",        icon: "◑" },
+    "MODERATE":   { color: "#FBBF24", badge: "risk-badge-moderate",   icon: "◕" },
+    "HIGH":       { color: "#FB923C", badge: "risk-badge-high",       icon: "●" },
+    "VERY HIGH":  { color: "#F87171", badge: "risk-badge-very-high",  icon: "⬤" },
+    "CRITICAL":   { color: "#FF4444", badge: "risk-badge-critical",   icon: "⬤" },
+};
+
+// ─── UTILITY FUNCTIONS ─────────────────────────────────────────
+function getSliderPos(prob) {
+    if (!prob || prob <= 0) return 0;
+    const logVal = Math.log10(prob);
+    const minLog = -9;
+    const maxLog = 0;
+    let percent = ((logVal - minLog) / (maxLog - minLog)) * 100;
+    return Math.min(Math.max(percent, 0), 100);
+}
+
+function formatProb(p) {
+    if (!p) return "—";
+    if (p < 1e-6) return p.toExponential(2);
+    if (p < 0.001) return (p * 100).toFixed(4) + "%";
+    return (p * 100).toFixed(2) + "%";
+}
+
+function getRiskColor(level) {
+    return RISK_CONFIG[level]?.color || "#94A3B8";
+}
+
+// ─── COMPONENTS ────────────────────────────────────────────────
+
+function StatusBar({ status, message }) {
+    return (
+        <div className={`flex items-center gap-2 text-xs mono px-3 py-1.5 rounded-full border ${
+            status === 'ready'    ? 'border-emerald-800 bg-emerald-950 text-emerald-400' :
+            status === 'running'  ? 'border-amber-800 bg-amber-950 text-amber-400' :
+            status === 'error'    ? 'border-red-800 bg-red-950 text-red-400' :
+            'border-slate-700 bg-slate-900 text-slate-400'
+        }`}>
+            <span className={status === 'running' ? 'pulse-dot' : ''}>
+                {status === 'ready' ? '✓' : status === 'running' ? '⟳' : status === 'error' ? '✗' : '○'}
+            </span>
+            <span>{message}</span>
+        </div>
+    );
+}
+
+function RiskDial({ probability, riskLevel }) {
+    const pos = getSliderPos(probability);
+    const color = getRiskColor(riskLevel || "NEGLIGIBLE");
+
+    return (
+        <div className="mb-6">
+            <div className="flex justify-between text-xs text-slate-500 mb-1 mono">
+                <span>SAFE (1e-9)</span>
+                <span>CERTAIN (100%)</span>
+            </div>
+            <div className="h-5 w-full rounded-full risk-gradient relative shadow-lg">
+                <div
+                    className="dial-needle absolute -top-1.5 w-8 h-8 rounded-full shadow-xl flex items-center justify-center"
+                    style={{
+                        left: `calc(${pos}% - 16px)`,
+                        background: '#0f172a',
+                        border: `3px solid ${color}`,
+                        boxShadow: `0 0 12px ${color}`,
+                    }}
+                >
+                    <div className="w-2 h-2 rounded-full" style={{ background: color }}></div>
+                </div>
+            </div>
+            <div className="flex justify-between text-xs text-slate-600 mt-1 mono">
+                <span>1e-9</span><span>1e-7</span><span>1e-5</span><span>1e-3</span><span>1e-1</span><span>1.0</span>
+            </div>
+        </div>
+    );
+}
+
+function MultiplierRow({ m, idx, onUpdate, onRemove }) {
+    return (
+        <div className="flex gap-2 mb-2 items-center slide-in">
+            <input
+                type="text"
+                value={m.name}
+                onChange={e => onUpdate(idx, 'name', e.target.value)}
+                className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs mono text-slate-200 focus:border-emerald-600 outline-none"
+                placeholder="Factor Name"
+            />
+            <div className="flex items-center gap-1">
+                <input
+                    type="number"
+                    value={m.value}
+                    step="0.1"
+                    min="0.01"
+                    onChange={e => onUpdate(idx, 'value', e.target.value)}
+                    className="w-16 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs mono text-center text-amber-400 focus:border-amber-600 outline-none"
+                    placeholder="1.0"
+                />
+                <span className="text-slate-500 text-xs">×</span>
+            </div>
+            <div className="flex items-center gap-1">
+                <span className="text-slate-600 text-xs">σ</span>
+                <input
+                    type="number"
+                    value={m.uncertainty}
+                    step="0.05"
+                    min="0.05"
+                    max="2.0"
+                    onChange={e => onUpdate(idx, 'uncertainty', e.target.value)}
+                    className="w-14 bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-xs mono text-center text-blue-400 focus:border-blue-600 outline-none"
+                    placeholder="0.2"
+                />
+            </div>
+            <button
+                onClick={() => onRemove(idx)}
+                className="text-red-600 hover:text-red-400 px-2 py-1 text-sm rounded hover:bg-red-950 transition-colors"
+            >×</button>
+        </div>
+    );
+}
+
+function InferenceTrace({ logicChain, ci }) {
+    return (
+        <div className="bg-slate-950 rounded-lg border border-slate-800 p-4 text-xs mono text-slate-400 slide-in">
+            <div className="flex items-center gap-2 font-bold text-slate-300 mb-3 pb-2 border-b border-slate-800">
+                <span className="text-emerald-500">▶</span>
+                <span>INFERENCE TRACE</span>
+                <span className="ml-auto text-slate-600">ADVI · 10k steps</span>
+            </div>
+            {logicChain.map((step, i) => (
+                <div key={i} className={`mb-1.5 flex gap-2 ${
+                    step.includes('Result') ? 'text-emerald-400 font-semibold' :
+                    step.includes('Source') ? 'text-blue-400' :
+                    step.includes('Prior')  ? 'text-purple-400' :
+                    step.includes('Multiplier') ? 'text-amber-400' :
+                    'text-slate-400'
+                }`}>
+                    <span className="text-slate-700 select-none">{String(i+1).padStart(2,'0')}.</span>
+                    <span>{step}</span>
+                </div>
+            ))}
+            {ci && (
+                <div className="mt-3 pt-2 border-t border-slate-800 text-emerald-500">
+                    95% CI: [{ci[0].toExponential(2)}, {ci[1].toExponential(2)}]
+                </div>
+            )}
+        </div>
+    );
+}
+
+function HistoryPanel({ history, onReplay }) {
+    if (!history.length) return (
+        <div className="text-center text-slate-600 text-xs mono py-8">No simulations yet</div>
+    );
+    return (
+        <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+            {history.slice().reverse().map((h, i) => (
+                <div
+                    key={i}
+                    onClick={() => onReplay(h)}
+                    className="flex items-center justify-between p-3 bg-slate-900 border border-slate-800 rounded-lg cursor-pointer hover:border-emerald-800 hover:bg-slate-800 transition-all"
+                >
+                    <div>
+                        <div className="text-xs text-slate-300 mono">{h.event_type.replace(/_/g,' ').toUpperCase()}</div>
+                        <div className="text-xs text-slate-600 mt-0.5">{h.timestamp}</div>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-sm font-bold mono" style={{ color: getRiskColor(h.result?.risk_level) }}>
+                            {h.result?.posterior_odds}
+                        </div>
+                        <div className={`text-xs px-2 py-0.5 rounded-full mt-1 ${RISK_CONFIG[h.result?.risk_level]?.badge}`}>
+                            {h.result?.risk_level}
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+// ─── MAIN APP ──────────────────────────────────────────────────
+function App() {
+    const [events, setEvents] = React.useState({});
+    const [selectedEvent, setSelectedEvent] = React.useState("startup_failure");
+    const [customRate, setCustomRate] = React.useState("");
+    const [exposure, setExposure] = React.useState(1.0);
+    const [multipliers, setMultipliers] = React.useState([
+        { name: "Location_Factor", value: 1.0, uncertainty: 0.2 },
+        { name: "Activity_Risk",   value: 1.0, uncertainty: 0.2 }
+    ]);
+    const [result, setResult] = React.useState(null);
+    const [loading, setLoading] = React.useState(false);
+    const [apiStatus, setApiStatus] = React.useState('connecting');
+    const [history, setHistory] = React.useState([]);
+    const [activeTab, setActiveTab] = React.useState('config');
+    const [scenarioName, setScenarioName] = React.useState("");
+
+    // Check API health on mount
+    React.useEffect(() => {
+        fetch(`${API_BASE}/health`)
+            .then(r => r.json())
+            .then(d => {
+                setApiStatus('ready');
+                return fetch(`${API_BASE}/datalake`);
+            })
+            .then(r => r.json())
+            .then(data => setEvents(data))
+            .catch(() => setApiStatus('error'));
+    }, []);
+
+    const addMultiplier = () => {
+        setMultipliers([...multipliers, { name: `Factor_${multipliers.length + 1}`, value: 1.0, uncertainty: 0.2 }]);
+    };
+
+    const updateMultiplier = (idx, field, val) => {
+        const updated = [...multipliers];
+        updated[idx][field] = field === 'name' ? val : parseFloat(val) || 0;
+        setMultipliers(updated);
+    };
+
+    const removeMultiplier = (idx) => {
+        setMultipliers(multipliers.filter((_, i) => i !== idx));
+    };
+
+    const calculateRisk = async () => {
+        setLoading(true);
+        setApiStatus('running');
+
+        const payload = {
+            event_type: selectedEvent,
+            exposure: parseFloat(exposure),
+            multipliers: multipliers,
+            scenario_name: scenarioName || undefined,
+        };
+        if (customRate) payload.custom_base_rate = parseFloat(customRate);
+
+        try {
+            const res = await fetch(`${API_BASE}/assess`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.detail || 'API Error');
+            }
+            const data = await res.json();
+            setResult(data);
+            setApiStatus('ready');
+            setHistory(prev => [...prev, {
+                event_type: selectedEvent,
+                exposure,
+                multipliers: [...multipliers],
+                result: data,
+                timestamp: new Date().toLocaleTimeString()
+            }]);
+            setActiveTab('results');
+        } catch (err) {
+            setApiStatus('error');
+            alert(`Error: ${err.message}\n\nEnsure server.py is running on port 8000`);
+        }
+        setLoading(false);
+    };
+
+    const replayScenario = (h) => {
+        setSelectedEvent(h.event_type);
+        setExposure(h.exposure);
+        setMultipliers(h.multipliers);
+        setResult(h.result);
+        setActiveTab('results');
+    };
+
+    const eventInfo = events[selectedEvent];
+    const riskColor = result ? getRiskColor(result.risk_level) : "#10B981";
+
+    return (
+        <div className="min-h-screen p-4 md:p-6">
+            {/* ── HEADER ── */}
+            <header className="max-w-6xl mx-auto mb-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl md:text-3xl font-bold mono">
+                            <span className="text-emerald-400">BAYESIAN</span>
+                            <span className="text-slate-300"> RISK ENGINE</span>
+                            <span className="text-xs text-slate-600 ml-2 font-normal">v1.0</span>
+                        </h1>
+                        <p className="text-slate-500 text-sm mt-1">
+                            Hierarchical Poisson Model · ADVI Variational Inference · PyMC
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <StatusBar
+                            status={apiStatus}
+                            message={
+                                apiStatus === 'ready'    ? `API Online · ${Object.keys(events).length} events` :
+                                apiStatus === 'running'  ? 'Running ADVI inference...' :
+                                apiStatus === 'error'    ? 'API Offline — start server.py' :
+                                'Connecting...'
+                            }
+                        />
+                    </div>
+                </div>
+            </header>
+
+            {/* ── MAIN GRID ── */}
+            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                {/* ── LEFT PANEL: CONFIG ── */}
+                <div className="lg:col-span-1 space-y-4">
+                    <div className="card rounded-xl p-5">
+                        <div className="flex gap-1 mb-5 bg-slate-900 rounded-lg p-1">
+                            {['config', 'history'].map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`flex-1 py-1.5 text-xs mono rounded-md transition-all ${
+                                        activeTab === tab
+                                            ? 'bg-emerald-700 text-white'
+                                            : 'text-slate-500 hover:text-slate-300'
+                                    }`}
+                                >
+                                    {tab.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+
+                        {activeTab === 'config' && (
+                            <div>
+                                {/* Scenario Name */}
+                                <div className="mb-4">
+                                    <label className="block text-xs text-slate-500 mono mb-1.5">SCENARIO LABEL (optional)</label>
+                                    <input
+                                        type="text"
+                                        value={scenarioName}
+                                        onChange={e => setScenarioName(e.target.value)}
+                                        placeholder="e.g. Storm Chaser 2024"
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-emerald-600 outline-none"
+                                    />
+                                </div>
+
+                                {/* Event Select */}
+                                <div className="mb-4">
+                                    <label className="block text-xs text-slate-500 mono mb-1.5">BASE EVENT (PRIOR)</label>
+                                    <select
+                                        value={selectedEvent}
+                                        onChange={e => setSelectedEvent(e.target.value)}
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-emerald-600 outline-none"
+                                    >
+                                        {Object.entries(events).map(([k, v]) => (
+                                            <option key={k} value={k}>
+                                                [{v.category?.toUpperCase() || 'GEN'}] {k.replace(/_/g,' ').toUpperCase()}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {eventInfo && (
+                                        <div className="mt-2 p-2.5 bg-slate-900 rounded-lg border border-slate-800">
+                                            <div className="text-xs text-slate-400">{eventInfo.description}</div>
+                                            <div className="flex justify-between mt-1.5 text-xs mono">
+                                                <span className="text-emerald-400">Base: {eventInfo.base_rate?.toExponential(1)}</span>
+                                                <span className="text-blue-400">Src: {eventInfo.source}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Custom Base Rate */}
+                                <div className="mb-4">
+                                    <label className="block text-xs text-slate-500 mono mb-1.5">CUSTOM BASE RATE (override)</label>
+                                    <input
+                                        type="number"
+                                        value={customRate}
+                                        onChange={e => setCustomRate(e.target.value)}
+                                        placeholder="e.g. 0.0001 (leave blank to use preset)"
+                                        step="0.0001"
+                                        min="0"
+                                        max="1"
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm mono text-amber-400 focus:border-amber-600 outline-none"
+                                    />
+                                </div>
+
+                                {/* Exposure */}
+                                <div className="mb-5">
+                                    <label className="block text-xs text-slate-500 mono mb-1.5">EXPOSURE DURATION (units)</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="number"
+                                            value={exposure}
+                                            onChange={e => setExposure(e.target.value)}
+                                            step="0.5"
+                                            min="0.01"
+                                            className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm mono text-white focus:border-emerald-600 outline-none"
+                                        />
+                                        {[1, 5, 10, 30].map(v => (
+                                            <button
+                                                key={v}
+                                                onClick={() => setExposure(v)}
+                                                className={`px-2 py-1 text-xs rounded-lg border transition-all ${
+                                                    parseFloat(exposure) === v
+                                                        ? 'bg-emerald-700 border-emerald-600 text-white'
+                                                        : 'border-slate-700 text-slate-500 hover:border-slate-500'
+                                                }`}
+                                            >
+                                                {v}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Multipliers */}
+                                <div className="mb-5">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <label className="text-xs text-slate-500 mono">CONTEXT MULTIPLIERS</label>
+                                        <button
+                                            onClick={addMultiplier}
+                                            className="text-xs bg-emerald-800 hover:bg-emerald-700 text-emerald-300 px-3 py-1 rounded-lg transition-colors"
+                                        >
+                                            + ADD
+                                        </button>
+                                    </div>
+                                    <div className="text-xs text-slate-600 mono mb-2">Name · Value (×) · Uncertainty (σ)</div>
+                                    {multipliers.map((m, idx) => (
+                                        <MultiplierRow
+                                            key={idx}
+                                            m={m}
+                                            idx={idx}
+                                            onUpdate={updateMultiplier}
+                                            onRemove={removeMultiplier}
+                                        />
+                                    ))}
+                                    {multipliers.length === 0 && (
+                                        <div className="text-center text-slate-700 text-xs mono py-3">
+                                            No multipliers — using base rate only
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Run Button */}
+                                <button
+                                    onClick={calculateRisk}
+                                    disabled={loading || apiStatus === 'error'}
+                                    className={`w-full py-3.5 rounded-xl font-bold mono text-sm transition-all ${
+                                        loading
+                                            ? 'bg-amber-800 text-amber-300 cursor-wait'
+                                            : apiStatus === 'error'
+                                            ? 'bg-slate-800 text-slate-600 cursor-not-allowed'
+                                            : 'bg-emerald-700 hover:bg-emerald-600 text-white glow-green'
+                                    }`}
+                                >
+                                    {loading ? '⟳ RUNNING ADVI (10k steps)...' : '▶ RUN SIMULATION'}
+                                </button>
+                            </div>
+                        )}
+
+                        {activeTab === 'history' && (
+                            <HistoryPanel history={history} onReplay={replayScenario} />
+                        )}
+                    </div>
+                </div>
+
+                {/* ── RIGHT PANEL: RESULTS ── */}
+                <div className="lg:col-span-2 space-y-4">
+
+                    {/* Results / Awaiting State */}
+                    {!result ? (
+                        <div className="card rounded-xl p-8 flex flex-col items-center justify-center min-h-64">
+                            <div className="text-6xl mb-4 opacity-20">⬡</div>
+                            <div className="text-slate-600 mono text-sm">Configure scenario and run simulation</div>
+                            <div className="text-slate-700 text-xs mt-2">Awaiting posterior analysis...</div>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 slide-in">
+
+                            {/* ── MAIN RESULT CARD ── */}
+                            <div className="card rounded-xl p-6" style={{ borderColor: riskColor + '40' }}>
+                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+                                    <div>
+                                        <div className="text-xs text-slate-500 mono mb-1">POSTERIOR ODDS</div>
+                                        <div className="text-4xl md:text-5xl font-bold mono" style={{ color: riskColor }}>
+                                            {result.posterior_odds}
+                                        </div>
+                                        <div className="text-slate-400 text-sm mt-1">
+                                            {selectedEvent.replace(/_/g,' ').toUpperCase()}
+                                            {scenarioName && <span className="text-slate-600"> · {scenarioName}</span>}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <div className={`px-4 py-2 rounded-xl text-sm font-bold mono ${RISK_CONFIG[result.risk_level]?.badge}`}>
+                                            {RISK_CONFIG[result.risk_level]?.icon} {result.risk_level}
+                                        </div>
+                                        <div className="text-xs text-slate-600 mono">{result.computed_at?.slice(0,19).replace('T',' ')} UTC</div>
+                                    </div>
+                                </div>
+
+                                {/* RISK DIAL */}
+                                <RiskDial probability={result.posterior_probability} riskLevel={result.risk_level} />
+
+                                {/* STATS GRID */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <div className="bg-slate-900 rounded-lg p-3 border border-slate-800 text-center">
+                                        <div className="text-lg font-bold mono text-emerald-400">
+                                            {result.posterior_probability.toExponential(2)}
+                                        </div>
+                                        <div className="text-xs text-slate-500 mt-0.5">Raw Probability</div>
+                                    </div>
+                                    <div className="bg-slate-900 rounded-lg p-3 border border-slate-800 text-center">
+                                        <div className="text-lg font-bold mono text-amber-400">
+                                            {result.micromorts.toFixed(2)}
+                                        </div>
+                                        <div className="text-xs text-slate-500 mt-0.5">Micromorts</div>
+                                    </div>
+                                    <div className="bg-slate-900 rounded-lg p-3 border border-slate-800 text-center">
+                                        <div className="text-lg font-bold mono text-blue-400">
+                                            {formatProb(result.confidence_interval_95[0])}
+                                        </div>
+                                        <div className="text-xs text-slate-500 mt-0.5">CI Lower (2.5%)</div>
+                                    </div>
+                                    <div className="bg-slate-900 rounded-lg p-3 border border-slate-800 text-center">
+                                        <div className="text-lg font-bold mono text-purple-400">
+                                            {formatProb(result.confidence_interval_95[1])}
+                                        </div>
+                                        <div className="text-xs text-slate-500 mt-0.5">CI Upper (97.5%)</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── INFERENCE TRACE ── */}
+                            <InferenceTrace
+                                logicChain={result.logic_chain}
+                                ci={result.confidence_interval_95}
+                            />
+
+                            {/* ── CONTEXT PANEL ── */}
+                            {eventInfo && (
+                                <div className="card rounded-xl p-4">
+                                    <div className="text-xs text-slate-500 mono mb-3">DATA LAKE CONTEXT</div>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
+                                        <div>
+                                            <div className="text-slate-600">Description</div>
+                                            <div className="text-slate-300 mt-0.5">{eventInfo.description}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-slate-600">Source</div>
+                                            <div className="text-blue-400 mt-0.5 mono">{eventInfo.source}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-slate-600">Category</div>
+                                            <div className="text-purple-400 mt-0.5 mono uppercase">{eventInfo.category}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* ── QUICK ACTIONS ── */}
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => { setResult(null); setActiveTab('config'); }}
+                                    className="flex-1 py-2.5 text-xs mono border border-slate-700 rounded-xl text-slate-400 hover:border-slate-500 hover:text-slate-200 transition-all"
+                                >
+                                    ← NEW SCENARIO
+                                </button>
+                                <button
+                                    onClick={calculateRisk}
+                                    disabled={loading}
+                                    className="flex-1 py-2.5 text-xs mono bg-slate-800 border border-slate-700 rounded-xl text-slate-300 hover:bg-slate-700 transition-all"
+                                >
+                                    ⟳ RE-RUN
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const blob = new Blob([JSON.stringify({
+                                            scenario: selectedEvent,
+                                            exposure,
+                                            multipliers,
+                                            result,
+                                            exported_at: new Date().toISOString()
+                                        }, null, 2)], { type: 'application/json' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `risk_${selectedEvent}_${Date.now()}.json`;
+                                        a.click();
+                                    }}
+                                    className="flex-1 py-2.5 text-xs mono bg-emerald-900 border border-emerald-800 rounded-xl text-emerald-300 hover:bg-emerald-800 transition-all"
+                                >
+                                    ↓ EXPORT JSON
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* ── FOOTER ── */}
+            <footer className="max-w-6xl mx-auto mt-8 pt-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-700 mono">
+                <span>Bayesian Risk Engine v1.0 · Master Architect Protocol</span>
+                <span>PyMC · ADVI · FastAPI · React</span>
+            </footer>
+        </div>
+    );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
