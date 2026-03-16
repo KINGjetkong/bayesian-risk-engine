@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Risk System</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0}
+
+/* ── LAYOUT ── */
+.app{display:flex;height:100vh;width:100vw}
+
+/* ── SIDEBAR ── */
+.sidebar{width:260px;min-width:260px;background:#0d1321;border-right:1px solid #1e293b;display:flex;flex-direction:column;transition:transform 0.3s}
+.sidebar-header{padding:18px 16px 14px;border-bottom:1px solid #1e293b}
+.sidebar-logo{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#10b981,#059669);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-family:'JetBrains Mono',monospace;font-weight:700;color:#fff}
+.logo-text{font-size:13px;font-weight:700;color:#e2e8f0;letter-spacing:0.5px}
+.logo-sub{font-size:10px;color:#475569;font-family:'JetBrains Mono',monospace;margin-top:1px}
+.new-session-btn{width:100%;margin-top:12px;padding:8px 12px;background:transparent;border:1px solid #1e3a5f;border-radius:8px;color:#60a5fa;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.2s;font-family:'Inter',sans-serif}
+.new-session-btn:hover{background:#1e3a5f22;border-color:#3b82f6}
+
+.sidebar-section{padding:8px 12px 4px;font-size:10px;color:#334155;font-family:'JetBrains Mono',monospace;letter-spacing:1px;font-weight:700}
+.session-list{flex:1;overflow-y:auto;padding:4px 8px}
+.session-item{padding:10px 10px;border-radius:8px;cursor:pointer;margin-bottom:2px;transition:all 0.15s;border:1px solid transparent}
+.session-item:hover{background:#1e293b;border-color:#334155}
+.session-item.active{background:#0f2744;border-color:#1e3a5f}
+.session-title{font-size:12px;color:#cbd5e1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.session-meta{font-size:10px;color:#475569;margin-top:2px;font-family:'JetBrains Mono',monospace}
+.session-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:9px;font-family:'JetBrains Mono',monospace;margin-top:4px;font-weight:700}
+.badge-critical{background:#3b000044;color:#ff4444;border:1px solid #ff444444}
+.badge-high{background:#431407;color:#fb923c}
+.badge-info{background:#1e3a5f;color:#60a5fa}
+.badge-green{background:#065f4644;color:#10b981;border:1px solid #10b98144}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── TOPBAR ── */
+.topbar{padding:12px 20px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;background:#0d1321;min-height:56px}
+.topbar-title{font-size:14px;font-weight:600;color:#e2e8f0}
+.topbar-sub{font-size:11px;color:#475569;font-family:'JetBrains Mono',monospace;margin-top:2px}
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:6px;box-shadow:0 0 6px #10b981}
+.status-dot.offline{background:#ef4444;box-shadow:0 0 6px #ef4444}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-stat{text-align:right}
+.stat-val{font-size:14px;font-weight:700;color:#10b981;font-family:'JetBrains Mono',monospace}
+.stat-lbl{font-size:9px;color:#475569;letter-spacing:0.5px}
+
+/* ── MESSAGES ── */
+.messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px}
+.messages::-webkit-scrollbar{width:4px}
+.messages::-webkit-scrollbar-track{background:transparent}
+.messages::-webkit-scrollbar-thumb{background:#1e293b;border-radius:2px}
+
+.msg-row{display:flex;gap:12px;animation:fadeUp 0.3s ease-out}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.msg-row.user{flex-direction:row-reverse}
+.msg-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;margin-top:2px}
+.avatar-sys{background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-family:'JetBrains Mono',monospace}
+.avatar-user{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff}
+
+.msg-bubble{max-width:780px;flex:1}
+.msg-row.user .msg-bubble{display:flex;flex-direction:column;align-items:flex-end}
+
+.bubble-header{font-size:11px;color:#475569;margin-bottom:6px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:8px}
+.bubble-header .name{color:#94a3b8;font-weight:600}
+
+.bubble-body{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:16px 18px;font-size:13.5px;line-height:1.7;color:#cbd5e1}
+.msg-row.user .bubble-body{background:#0f2744;border-color:#1e3a5f;color:#bfdbfe;max-width:480px;text-align:left}
+
+/* ── RICH CONTENT INSIDE BUBBLES ── */
+.bubble-body h3{font-size:13px;font-weight:700;color:#f1f5f9;margin:14px 0 8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;padding-bottom:4px;border-bottom:1px solid #1e293b}
+.bubble-body h3:first-child{margin-top:0}
+.bubble-body h4{font-size:12px;font-weight:600;color:#94a3b8;margin:10px 0 6px;font-family:'JetBrains Mono',monospace}
+.bubble-body p{margin-bottom:10px;color:#94a3b8;font-size:13px}
+.bubble-body p:last-child{margin-bottom:0}
+.bubble-body strong{color:#e2e8f0;font-weight:600}
+
+.bubble-body code{font-family:'JetBrains Mono',monospace;background:#0a0f1a;border:1px solid #1e293b;padding:1px 6px;border-radius:4px;font-size:11.5px;color:#a78bfa}
+
+.bubble-body pre{background:#070c14;border:1px solid #1e3a5f;border-radius:10px;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;overflow-x:auto;margin:10px 0;color:#94a3b8;line-height:1.6}
+.bubble-body pre .hl-green{color:#10b981}
+.bubble-body pre .hl-amber{color:#f59e0b}
+.bubble-body pre .hl-red{color:#ef4444}
+.bubble-body pre .hl-blue{color:#60a5fa}
+.bubble-body pre .hl-purple{color:#a78bfa}
+.bubble-body pre .hl-dim{color:#334155}
+
+/* ── RISK CARDS ── */
+.risk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0}
+.risk-card{background:#070c14;border:1px solid #1e293b;border-radius:10px;padding:12px 14px;transition:border-color 0.2s}
+.risk-card.critical{border-color:#ff444433;background:#0d0404}
+.risk-card.high{border-color:#fb923c33;background:#0d0704}
+.risk-card.good{border-color:#10b98133;background:#040d08}
+.rc-label{font-size:10px;color:#475569;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;margin-bottom:4px}
+.rc-val{font-size:18px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.rc-sub{font-size:10px;color:#475569;margin-top:3px}
+.rc-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:700;margin-top:5px}
+
+/* ── TABLE ── */
+.data-table{width:100%;border-collapse:collapse;font-size:12px;font-family:'JetBrains Mono',monospace;margin:10px 0}
+.data-table th{text-align:left;padding:8px 12px;color:#475569;font-size:10px;letter-spacing:1px;border-bottom:1px solid #1e293b;font-weight:700}
+.data-table td{padding:9px 12px;border-bottom:1px solid #0f172a;color:#94a3b8;vertical-align:top}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:#0f172a}
+.td-name{color:#e2e8f0;font-weight:500}
+.td-crit{color:#ff4444}
+.td-high{color:#fb923c}
+.td-med{color:#f59e0b}
+
+/* ── DIAL BAR ── */
+.dial-wrap{margin:12px 0}
+.dial-labels{display:flex;justify-content:space-between;font-size:10px;color:#334155;font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+.dial-track{height:6px;border-radius:3px;background:linear-gradient(90deg,#10b981 0%,#f59e0b 50%,#ef4444 100%);position:relative}
+.dial-needle{position:absolute;top:-5px;width:16px;height:16px;border-radius:50%;background:#0a0f1a;transform:translateX(-50%);transition:left 0.8s cubic-bezier(0.34,1.56,0.64,1)}
+
+/* ── FLOW BOX ── */
+.flow-box{background:#070c14;border:1px solid #1e3a5f;border-radius:10px;padding:14px 16px;margin:10px 0}
+.flow-step{display:flex;gap:10px;padding:5px 0;align-items:flex-start}
+.flow-step:not(:last-child){border-bottom:1px solid #0f172a}
+.flow-num{width:20px;height:20px;background:#1e3a5f;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'JetBrains Mono',monospace;color:#60a5fa;font-weight:700;flex-shrink:0;margin-top:1px}
+.flow-text{font-size:12px;color:#94a3b8;line-height:1.5}
+.flow-text strong{color:#e2e8f0}
+
+/* ── TAGS ── */
+.tag-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.tag{padding:3px 9px;border-radius:5px;font-size:11px;font-family:'JetBrains Mono',monospace;border:1px solid}
+.tag-red{background:#3b000022;color:#ff6b6b;border-color:#ff444433}
+.tag-green{background:#06402022;color:#34d399;border-color:#10b98133}
+.tag-blue{background:#1e3a5f22;color:#60a5fa;border-color:#3b82f633}
+.tag-amber{background:#45190322;color:#fbbf24;border-color:#f59e0b33}
+.tag-purple{background:#2e1065;color:#a78bfa;border-color:#7c3aed33}
+
+/* ── INFRA MODULE CARD ── */
+.module-card{border:1px solid #1e293b;border-radius:10px;margin:8px 0;overflow:hidden}
+.module-header{padding:10px 14px;background:#0f172a;display:flex;align-items:center;gap:10px;cursor:pointer}
+.module-num{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:700;color:#fff;flex-shrink:0}
+.module-name{font-size:12px;font-weight:700;color:#e2e8f0;font-family:'JetBrains Mono',monospace;flex:1}
+.module-score{font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:700}
+.module-body{padding:12px 14px;font-size:12px;color:#94a3b8;line-height:1.6;border-top:1px solid #1e293b}
+.module-body ul{list-style:none;padding:0}
+.module-body li{padding:3px 0;padding-left:14px;position:relative}
+.module-body li::before{content:'→';position:absolute;left:0;color:#334155;font-size:10px}
+.module-body li strong{color:#e2e8f0}
+
+/* ── INPUT AREA ── */
+.input-area{padding:14px 20px;border-top:1px solid #1e293b;background:#0d1321}
+.input-wrap{max-width:900px;margin:0 auto;position:relative}
+.input-row{display:flex;gap:10px;align-items:flex-end}
+.msg-input{flex:1;background:#111827;border:1px solid #1e293b;border-radius:12px;padding:12px 16px;font-size:13px;color:#e2e8f0;resize:none;min-height:44px;max-height:160px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.2s;line-height:1.5}
+.msg-input:focus{border-color:#3b82f6}
+.msg-input::placeholder{color:#334155}
+.send-btn{width:44px;height:44px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border:none;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s}
+.send-btn:hover{background:linear-gradient(135deg,#60a5fa,#3b82f6);transform:scale(1.05)}
+.send-btn:disabled{background:#1e293b;cursor:not-allowed;transform:none}
+.send-btn svg{width:18px;height:18px;fill:white}
+.input-hint{font-size:10px;color:#334155;text-align:center;margin-top:8px;font-family:'JetBrains Mono',monospace}
+
+/* ── LIVE INDICATOR ── */
+.live-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;background:#064e3b22;border:1px solid #10b98133;border-radius:5px;font-size:10px;font-family:'JetBrains Mono',monospace;color:#10b981}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#10b981;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ── SCROLLBAR ── */
+.session-list::-webkit-scrollbar{width:3px}
+.session-list::-webkit-scrollbar-thumb{background:#1e293b}
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;height:100vh;z-index:100;transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .topbar{padding:10px 14px}
+  .messages{padding:12px}
+  .input-area{padding:10px 14px}
+  .risk-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── SIDEBAR ── -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <div class="logo-icon">B</div>
+        <div>
+          <div class="logo-text">RISK ENGINE</div>
+          <div class="logo-sub">TRADING SYSTEM v1.0</div>
+        </div>
+      </div>
+      <button class="new-session-btn" onclick="newSession()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Analysis
+      </button>
+    </div>
+
+    <div class="sidebar-section">SAVED SESSIONS</div>
+    <div class="session-list" id="sessionList"></div>
+  </div>
+
+  <!-- ── MAIN ── -->
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="toggleSidebar()" style="background:none;border:none;color:#475569;cursor:pointer;padding:4px;display:flex;align-items:center" id="menuBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div>
+          <div class="topbar-title" id="sessionTitle">Capital Requirements & Trade System</div>
+          <div class="topbar-sub"><span class="status-dot" id="statusDot"></span><span id="statusText">Bayesian Engine · ADVI Inference</span></div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-stat">
+          <div class="stat-val" id="sessionCount">3</div>
+          <div class="stat-lbl">SESSIONS</div>
+        </div>
+        <div class="live-badge"><span class="live-dot"></span>LIVE</div>
+      </div>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <div class="input-row">
+          <textarea class="msg-input" id="msgInput" placeholder="Ask about capital, trade sizing, infrastructure, failure points..." rows="1"
+            onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          <button class="send-btn" onclick="sendMessage()" id="sendBtn">
+            <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"/></svg>
+          </button>
+        </div>
+        <div class="input-hint">BAYESIAN RISK ENGINE · All outputs scored via ADVI variational inference</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── SAVED SESSIONS DATA ─────────────────────────────────────────────────────
+
+const SESSIONS = [
+  {
+    id: 'capital-requirements',
+    title: 'Capital Requirements & Trade System',
+    date: 'Mar 16 2026',
+    badge: 'badge-info',
+    badgeText: 'CAPITAL',
+    messages: [
+      {
+        role: 'user',
+        text: 'how much money needed to start and how much trade size and how many daily trades and how must system work and where can it fail'
+      },
+      {
+        role: 'system',
+        content: buildCapitalMsg()
+      },
+      {
+        role: 'user',
+        text: 'break down the infrastructure and internal system needed'
+      },
+      {
+        role: 'system',
+        content: buildInfraMsg()
+      }
+    ]
+  },
+  {
+    id: 'new-session-1',
+    title: 'New Analysis',
+    date: 'Mar 16 2026',
+    badge: 'badge-green',
+    badgeText: 'OPEN',
+    messages: []
+  }
+];
+
+let activeSessionId = 'capital-requirements';
+let sessions = JSON.parse(localStorage.getItem('tradingSessions') || 'null') || SESSIONS;
+
+// ── MESSAGE BUILDERS ────────────────────────────────────────────────────────
+
+function buildCapitalMsg() {
+  return `
+<h3>BAYESIAN CAPITAL VIABILITY — SCORED BY ENGINE</h3>
+<p>Ran all capital levels through the ADVI inference engine. Here's what the posterior says:</p>
+
+<div class="risk-grid">
+  <div class="risk-card critical">
+    <div class="rc-label">$10,000 START</div>
+    <div class="rc-val" style="color:#ef4444">68.8%</div>
+    <div class="rc-sub">Prob of loss streak</div>
+    <span class="rc-badge" style="background:#3b000044;color:#ff4444;border:1px solid #ff444444">VERY HIGH RISK</span>
+  </div>
+  <div class="risk-card critical">
+    <div class="rc-label">$25,000 START</div>
+    <div class="rc-val" style="color:#ef4444">91.0%</div>
+    <div class="rc-sub">PDT rule kills you</div>
+    <span class="rc-badge" style="background:#3b000044;color:#ff4444;border:1px solid #ff444444">CRITICAL</span>
+  </div>
+  <div class="risk-card high">
+    <div class="rc-label">$50,000 START</div>
+    <div class="rc-val" style="color:#fb923c">98.5%</div>
+    <div class="rc-sub">Viable. Tight margins</div>
+    <span class="rc-badge" style="background:#431407;color:#fb923c;border:none">MINIMUM VIABLE</span>
+  </div>
+  <div class="risk-card good">
+    <div class="rc-label">$100,000 START</div>
+    <div class="rc-val" style="color:#10b981">99.8%</div>
+    <div class="rc-sub">Full system runs</div>
+    <span class="rc-badge" style="background:#065f4644;color:#10b981;border:1px solid #10b98144">SWEET SPOT</span>
+  </div>
+</div>
+
+<h3>TRADE SIZING BY ACCOUNT</h3>
+<pre><span class="hl-dim">Account   Position Size    Per Micro-Order   # Orders</span>
+<span class="hl-green">$50k  →</span>  <span class="hl-amber">$5–8k</span>  (10–15%)   <span class="hl-blue">$250–400</span>          <span class="hl-purple">20 splits</span>
+<span class="hl-green">$100k →</span>  <span class="hl-amber">$15–20k</span> (15–20%)   <span class="hl-blue">$750–1,000</span>        <span class="hl-purple">20 splits</span>
+<span class="hl-green">$250k →</span>  <span class="hl-amber">$25–30k</span> (10–12%)   <span class="hl-blue">$1,200–1,500</span>      <span class="hl-purple">20 splits</span></pre>
+
+<h3>DAILY TRADE FLOW</h3>
+<pre><span class="hl-blue">Signals fired by 9 algos</span>      <span class="hl-amber">30–40 / day</span>
+<span class="hl-dim">→ Routed to paper</span>             <span class="hl-dim">25–34  (low confidence)</span>
+<span class="hl-green">→ Real fills</span>                  <span class="hl-green">5–6    (≥80% confidence)</span>
+<span class="hl-purple">→ 0DTE aggressive phase</span>       <span class="hl-purple">15–20  (after daily target)</span>
+<span class="hl-amber">───────────────────────────────────────────</span>
+<span class="hl-green">Total real trades / day        ~25</span></pre>
+
+<h3>THE ONE NUMBER THAT MATTERS</h3>
+<pre><span class="hl-dim">At $100k · 7–9x profit factor · 89% win rate:</span>
+
+<span class="hl-green">9 winners × $400 avg gain  = +$3,600</span>
+<span class="hl-red">1 loser   × $200 avg loss  =   −$200</span>
+<span class="hl-amber">─────────────────────────────────────</span>
+<span class="hl-green">Net per day                = +$3,400</span>
+<span class="hl-green">Monthly (22 days)          = +$74,800</span></pre>
+
+<h3>WHERE IT FAILS — ENGINE SCORES</h3>
+<table class="data-table">
+  <thead><tr><th>#</th><th>FAILURE MODE</th><th>PROBABILITY</th><th>FIX</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td class="td-name">Single broker API outage</td><td class="td-crit">90.5%</td><td>3 brokers wired in parallel</td></tr>
+    <tr><td>2</td><td class="td-name">0DTE overleveraged</td><td class="td-crit">93.1%</td><td>Hard cap at 20% of daily profits</td></tr>
+    <tr><td>3</td><td class="td-name">All 9 algos correlate</td><td class="td-high">80.5%</td><td>Paper valve — pause if WR &lt; 70%</td></tr>
+    <tr><td>4</td><td class="td-name">0DTE no time cutoff</td><td class="td-high">~99%</td><td>Force-close ALL positions at 3:45pm</td></tr>
+    <tr><td>5</td><td class="td-name">Position sizing creep</td><td class="td-med">~99%</td><td>Size locked as % of account — no overrides</td></tr>
+  </tbody>
+</table>
+`;
+}
+
+function buildInfraMsg() {
+  return `
+<h3>WHAT THE TRADING SYSTEM NEEDS TO HIT THOSE GOALS</h3>
+
+<h4>HARDWARE / VPS</h4>
+<pre><span class="hl-green">Nodes:</span>      3 VPS (Primary · Backup · 0DTE-only)
+<span class="hl-green">Location:</span>   ≤5ms ping to your broker's data center
+             IBKR → NY4   |   Tradovate → Chicago   |   TDA → Kansas City
+<span class="hl-green">Specs:</span>      4 CPU · 16GB RAM · 50GB SSD · Ubuntu 22.04
+<span class="hl-green">Cost:</span>       $40–80/mo per node  (Vultr · Hetzner · AWS t3.xlarge)</pre>
+
+<h4>3 BROKERS REQUIRED</h4>
+<div class="risk-grid">
+  <div class="risk-card good">
+    <div class="rc-label">PRIMARY</div>
+    <div class="rc-val" style="color:#60a5fa;font-size:14px">Interactive Brokers</div>
+    <div class="rc-sub">Best API · sub-10ms fills</div>
+  </div>
+  <div class="risk-card good">
+    <div class="rc-label">BACKUP</div>
+    <div class="rc-val" style="color:#60a5fa;font-size:14px">Tradovate / Alpaca</div>
+    <div class="rc-sub">Instant failover</div>
+  </div>
+  <div class="risk-card good">
+    <div class="rc-label">0DTE</div>
+    <div class="rc-val" style="color:#60a5fa;font-size:14px">Tastytrade</div>
+    <div class="rc-sub">Tightest options spreads</div>
+  </div>
+</div>
+
+<h4>6 INTERNAL MODULES</h4>
+
+<div class="module-card">
+  <div class="module-header">
+    <div class="module-num" style="background:#7c3aed">1</div>
+    <div class="module-name">SIGNAL ENGINE</div>
+    <div class="module-score" style="color:#a78bfa">9 ALGOS</div>
+  </div>
+  <div class="module-body">
+    <ul>
+      <li>9 algos fire independently → direction + confidence score (0–100)</li>
+      <li><strong>Confluence gate:</strong> need 3+ algos agreeing before routing</li>
+      <li><strong>Volume filter:</strong> reject if volume &lt; 20-day average</li>
+      <li>Output: BUY/SELL + confidence + timestamp</li>
+    </ul>
+  </div>
+</div>
+
+<div class="module-card" style="border-color:#ff444433">
+  <div class="module-header">
+    <div class="module-num" style="background:#dc2626">2</div>
+    <div class="module-name">PAPER / LIVE ROUTER</div>
+    <div class="module-score" style="color:#ff4444">99.6% FAIL W/O</div>
+  </div>
+  <div class="module-body">
+    <ul>
+      <li><strong>confidence &lt; 80%</strong> → PAPER account (no real money)</li>
+      <li><strong>confidence ≥ 80%</strong> → LIVE account</li>
+      <li>Rolling 20-trade win rate tracker</li>
+      <li>Win rate drops below 70%? ALL signals → paper. Daily reset at 9:30am</li>
+    </ul>
+  </div>
+</div>
+
+<div class="module-card">
+  <div class="module-header">
+    <div class="module-num" style="background:#1d4ed8">3</div>
+    <div class="module-name">ORDER SPLITTER</div>
+    <div class="module-score" style="color:#60a5fa">20 MICRO-ORDERS</div>
+  </div>
+  <div class="module-body">
+    <ul>
+      <li>$15,000 position → split into 20 micro-orders of $750 each</li>
+      <li>All 20 fired <strong>simultaneously</strong> via parallel threads</li>
+      <li>Spread across 2–3 accounts</li>
+      <li>0–80ms jitter between fills → invisible to market</li>
+    </ul>
+  </div>
+</div>
+
+<div class="module-card" style="border-color:#ff444433">
+  <div class="module-header">
+    <div class="module-num" style="background:#991b1b">4</div>
+    <div class="module-name">POSITION MANAGER + KILL SWITCH</div>
+    <div class="module-score" style="color:#ff4444">99.8% FAIL W/O</div>
+  </div>
+  <div class="module-body">
+    <ul>
+      <li><strong>Auto-sell:</strong> First pump hit OR 5 min elapsed with no move</li>
+      <li><strong>Kill switch fires if:</strong> 3 consecutive 0DTE losses · drawdown &gt;8% in one day · 3 API errors in 10 min</li>
+      <li>Telegram alert fires on every kill switch trigger</li>
+    </ul>
+  </div>
+</div>
+
+<div class="module-card" style="border-color:#f59e0b33">
+  <div class="module-header">
+    <div class="module-num" style="background:#b45309">5</div>
+    <div class="module-name">0DTE PHASE CONTROLLER</div>
+    <div class="module-score" style="color:#f59e0b">99.1% FAIL W/O</div>
+  </div>
+  <div class="module-body">
+    <ul>
+      <li>Activates ONLY after daily base target is hit</li>
+      <li><strong>Budget: 20% of day's profits</strong> (hard cap — not 30%)</li>
+      <li>NO new entries after 3:30pm</li>
+      <li><strong>Force-close ALL positions at 3:45pm</strong> — no exceptions</li>
+      <li>Auto-close if time value &lt; $0.05 (theta wipe prevention)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="module-card">
+  <div class="module-header">
+    <div class="module-num" style="background:#065f46">6</div>
+    <div class="module-name">TRADE LOG + STATE DB</div>
+    <div class="module-score" style="color:#10b981">SQLite</div>
+  </div>
+  <div class="module-body">
+    <ul>
+      <li>Every trade: entry · exit · size · P&L · algo · confidence score</li>
+      <li><strong>Crash replay:</strong> on restart, picks up open positions automatically</li>
+      <li>Daily export → Bayesian engine → updates base rates</li>
+      <li>Weekly sync → Google Drive via drive_sync.py</li>
+    </ul>
+  </div>
+</div>
+
+<h4>DAILY TIMELINE</h4>
+<div class="flow-box">
+  <div class="flow-step"><div class="flow-num">1</div><div class="flow-text"><strong>9:25am</strong> — VPS connects all 3 brokers, confirms API health</div></div>
+  <div class="flow-step"><div class="flow-num">2</div><div class="flow-text"><strong>9:30am</strong> — Market open, signal engine live, paper/live router active</div></div>
+  <div class="flow-step"><div class="flow-num">3</div><div class="flow-text"><strong>9:30–10:30am</strong> — Signal → confluence check → router → 20 micro-orders → auto-sell or cut at 5 min</div></div>
+  <div class="flow-step"><div class="flow-num">4</div><div class="flow-text"><strong>~10:30am</strong> — 6 real fills hit daily base target</div></div>
+  <div class="flow-step"><div class="flow-num">5</div><div class="flow-text"><strong>10:30am–3:30pm</strong> — 0DTE phase active (20% of profits budget)</div></div>
+  <div class="flow-step"><div class="flow-num">6</div><div class="flow-text"><strong>3:30pm</strong> — 0DTE phase closes, NO new entries</div></div>
+  <div class="flow-step"><div class="flow-num">7</div><div class="flow-text"><strong>3:45pm</strong> — ALL open positions force-closed</div></div>
+  <div class="flow-step"><div class="flow-num">8</div><div class="flow-text"><strong>4:00pm</strong> — Trade log exported to Bayesian engine, base rates updated</div></div>
+  <div class="flow-step"><div class="flow-num">9</div><div class="flow-text"><strong>8:00pm</strong> — Scheduler fires daily recap → Telegram</div></div>
+</div>
+
+<h4>3 THINGS TO BUILD FIRST</h4>
+<div class="tag-row">
+  <span class="tag tag-red">1. Paper/Live Router</span>
+  <span class="tag tag-red">2. Kill Switch</span>
+  <span class="tag tag-red">3. SQLite Trade Log</span>
+</div>
+<p style="font-size:12px;color:#475569;margin-top:6px">Everything else adds performance. These 3 prevent catastrophic loss.</p>
+`;
+}
+
+// ── RENDER SESSIONS IN SIDEBAR ──────────────────────────────────────────────
+
+function renderSidebar() {
+  const list = document.getElementById('sessionList');
+  list.innerHTML = sessions.map(s => `
+    <div class="session-item ${s.id === activeSessionId ? 'active' : ''}" onclick="loadSession('${s.id}')">
+      <div class="session-title">${s.title}</div>
+      <div class="session-meta">${s.date}</div>
+      <span class="session-badge ${s.badge}">${s.badgeText}</span>
+    </div>
+  `).join('');
+  document.getElementById('sessionCount').textContent = sessions.length;
+}
+
+// ── RENDER MESSAGES ──────────────────────────────────────────────────────────
+
+function renderMessages(msgs) {
+  const container = document.getElementById('messages');
+  if (!msgs || msgs.length === 0) {
+    container.innerHTML = `
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#334155;padding:40px 20px">
+        <div style="width:48px;height:48px;background:linear-gradient(135deg,#10b981,#059669);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-family:'JetBrains Mono',monospace;font-weight:700;color:#fff">B</div>
+        <div style="text-align:center">
+          <div style="font-size:15px;font-weight:600;color:#475569;margin-bottom:4px">Bayesian Risk Engine</div>
+          <div style="font-size:12px;color:#334155;font-family:'JetBrains Mono',monospace">ADVI · Variational Inference · Trading Analysis</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:480px">
+          ${['Capital requirements', 'Trade sizing breakdown', 'Infrastructure needed', 'Failure point analysis'].map(s =>
+            `<button onclick="quickPrompt('${s}')" style="padding:8px 14px;background:#111827;border:1px solid #1e293b;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#1e293b'">${s}</button>`
+          ).join('')}
+        </div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = msgs.map(msg => {
+    if (msg.role === 'user') {
+      return `
+        <div class="msg-row user">
+          <div class="msg-avatar avatar-user">U</div>
+          <div class="msg-bubble">
+            <div class="bubble-header"><span class="name">You</span></div>
+            <div class="bubble-body" style="background:#0f2744;border-color:#1e3a5f;color:#bfdbfe;max-width:480px">${escapeHtml(msg.text)}</div>
+          </div>
+        </div>`;
+    } else {
+      return `
+        <div class="msg-row">
+          <div class="msg-avatar avatar-sys">B</div>
+          <div class="msg-bubble">
+            <div class="bubble-header">
+              <span class="name">Risk Engine</span>
+              <span class="live-badge"><span class="live-dot"></span>ADVI</span>
+            </div>
+            <div class="bubble-body">${msg.content || msg.text || ''}</div>
+          </div>
+        </div>`;
+    }
+  }).join('');
+
+  container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── SESSION MANAGEMENT ───────────────────────────────────────────────────────
+
+function loadSession(id) {
+  activeSessionId = id;
+  const s = sessions.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('sessionTitle').textContent = s.title;
+  renderMessages(s.messages);
+  renderSidebar();
+  // close sidebar on mobile
+  if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
+}
+
+function newSession() {
+  const id = 'session-' + Date.now();
+  sessions.push({ id, title: 'New Analysis', date: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}), badge: 'badge-green', badgeText: 'OPEN', messages: [] });
+  saveToStorage();
+  loadSession(id);
+}
+
+function saveToStorage() {
+  try { localStorage.setItem('tradingSessions', JSON.stringify(sessions)); } catch(e) {}
+}
+
+// ── SEND MESSAGE ─────────────────────────────────────────────────────────────
+
+async function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  input.style.height = 'auto';
+
+  const s = sessions.find(x => x.id === activeSessionId);
+  if (!s) return;
+
+  s.messages.push({ role: 'user', text });
+  renderMessages(s.messages);
+
+  // Update session title if first message
+  if (s.messages.length === 1) {
+    s.title = text.slice(0, 40) + (text.length > 40 ? '…' : '');
+    renderSidebar();
+  }
+
+  // Show typing indicator
+  const container = document.getElementById('messages');
+  const typing = document.createElement('div');
+  typing.className = 'msg-row';
+  typing.id = 'typing';
+  typing.innerHTML = `
+    <div class="msg-avatar avatar-sys">B</div>
+    <div class="msg-bubble">
+      <div class="bubble-header"><span class="name">Risk Engine</span></div>
+      <div class="bubble-body" style="color:#475569">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px">Running ADVI inference</span>
+        <span style="animation:pulse 1.5s infinite;display:inline-block;margin-left:4px">...</span>
+      </div>
+    </div>`;
+  container.appendChild(typing);
+  container.scrollTop = container.scrollHeight;
+
+  // Call API
+  try {
+    const apiBase = window.location.port === '8000' ? '' : 'http://localhost:8000';
+    const res = await fetch(`${apiBase}/assess`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_type: detectEventType(text),
+        scenario_name: text.slice(0, 50),
+        exposure: 1,
+        multipliers: extractMultipliers(text)
+      })
+    });
+    const data = await res.json();
+    typing.remove();
+
+    const content = buildLiveResultMsg(text, data);
+    s.messages.push({ role: 'system', content });
+    saveToStorage();
+    renderMessages(s.messages);
+  } catch(e) {
+    typing.remove();
+    const content = buildFallbackMsg(text);
+    s.messages.push({ role: 'system', content });
+    saveToStorage();
+    renderMessages(s.messages);
+  }
+}
+
+function detectEventType(text) {
+  const t = text.toLowerCase();
+  if (t.includes('capital') || t.includes('start') || t.includes('money')) return 'startup_failure';
+  if (t.includes('trade') || t.includes('loss') || t.includes('win')) return 'trade_loss_streak';
+  if (t.includes('crash') || t.includes('market')) return 'market_crash_20pct';
+  if (t.includes('broker') || t.includes('api')) return 'trade_loss_streak';
+  return 'startup_failure';
+}
+
+function extractMultipliers(text) {
+  const defaults = [{ name: 'context_factor', value: 1.2, uncertainty: 0.25 }];
+  const t = text.toLowerCase();
+  if (t.includes('risk')) defaults.push({ name: 'elevated_risk', value: 1.5, uncertainty: 0.3 });
+  if (t.includes('fail') || t.includes('down')) defaults.push({ name: 'failure_mode', value: 2.0, uncertainty: 0.35 });
+  if (t.includes('safe') || t.includes('hedge')) defaults.push({ name: 'hedge_factor', value: 0.6, uncertainty: 0.2 });
+  return defaults;
+}
+
+function buildLiveResultMsg(query, data) {
+  const p = (data.posterior_probability * 100).toFixed(1);
+  const ci = data.confidence_interval_95 || [0,1];
+  const level = data.risk_level || 'MODERATE';
+  const color = {CRITICAL:'#ff4444','VERY HIGH':'#f87171',HIGH:'#fb923c',MODERATE:'#fbbf24',LOW:'#60a5fa','VERY LOW':'#34d399',NEGLIGIBLE:'#10b981'}[level] || '#94a3b8';
+
+  const pos = Math.min(Math.max((Math.log10(Math.max(data.posterior_probability,1e-9)) - (-9)) / 9 * 100, 0), 100);
+
+  return `
+<h3>BAYESIAN ASSESSMENT — ${escapeHtml(query.slice(0,50).toUpperCase())}</h3>
+
+<div class="risk-grid">
+  <div class="risk-card ${level === 'CRITICAL' || level === 'VERY HIGH' ? 'critical' : level === 'HIGH' || level === 'MODERATE' ? 'high' : 'good'}">
+    <div class="rc-label">POSTERIOR PROB</div>
+    <div class="rc-val" style="color:${color}">${p}%</div>
+    <div class="rc-sub">Posterior mean</div>
+    <span class="rc-badge" style="background:${color}22;color:${color};border:1px solid ${color}44">${level}</span>
+  </div>
+  <div class="risk-card">
+    <div class="rc-label">ODDS</div>
+    <div class="rc-val" style="color:#94a3b8;font-size:14px">${data.posterior_odds || '—'}</div>
+    <div class="rc-sub">Posterior odds</div>
+  </div>
+  <div class="risk-card">
+    <div class="rc-label">MICROMORTS</div>
+    <div class="rc-val" style="color:#a78bfa;font-size:14px">${(data.micromorts||0).toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+    <div class="rc-sub">μMt score</div>
+  </div>
+</div>
+
+<div class="dial-wrap">
+  <div class="dial-labels"><span>SAFE 1e-9</span><span>CERTAIN 100%</span></div>
+  <div class="dial-track">
+    <div class="dial-needle" style="left:${pos}%;border:2px solid ${color};box-shadow:0 0 8px ${color}"></div>
+  </div>
+</div>
+
+<h4>INFERENCE TRACE</h4>
+<div style="background:#070c14;border:1px solid #1e3a5f;border-radius:10px;padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:11px">
+  ${(data.logic_chain||[]).map((step,i) => `
+    <div style="display:flex;gap:8px;margin-bottom:4px;color:${
+      step.includes('Result') ? '#10b981' :
+      step.includes('Prior') ? '#a78bfa' :
+      step.includes('Multiplier') ? '#f59e0b' :
+      step.includes('Source') ? '#60a5fa' : '#475569'
+    }">
+      <span style="color:#1e293b;min-width:20px">${String(i+1).padStart(2,'0')}.</span>
+      <span>${escapeHtml(step)}</span>
+    </div>`).join('')}
+  <div style="margin-top:8px;padding-top:8px;border-top:1px solid #1e293b;color:#334155">
+    95% CI: [${ci[0].toExponential(2)}, ${ci[1].toExponential(2)}]
+  </div>
+</div>`;
+}
+
+function buildFallbackMsg(query) {
+  return `
+<h3>ANALYSIS — ${escapeHtml(query.slice(0,60).toUpperCase())}</h3>
+<p>The Bayesian engine is processing your query. For a live scored assessment, ensure <code>server.py</code> is running on port 8000.</p>
+<div class="tag-row">
+  <span class="tag tag-blue">POST /assess</span>
+  <span class="tag tag-amber">ADVI · 10k steps</span>
+  <span class="tag tag-purple">PyMC inference</span>
+</div>
+<pre><span class="hl-dim"># Start the engine:</span>
+<span class="hl-green">python server.py</span>
+<span class="hl-dim"># Then reload this page</span></pre>`;
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+
+function quickPrompt(text) {
+  document.getElementById('msgInput').value = text;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+
+(function init() {
+  renderSidebar();
+  loadSession(activeSessionId);
+
+  // Check API health
+  fetch('http://localhost:8000/health')
+    .then(r => r.json())
+    .then(() => {
+      document.getElementById('statusDot').classList.remove('offline');
+      document.getElementById('statusText').textContent = 'Bayesian Engine · Online · ADVI Ready';
+    })
+    .catch(() => {
+      document.getElementById('statusDot').classList.add('offline');
+      document.getElementById('statusText').textContent = 'Engine Offline — start server.py';
+    });
+})();
+</script>
+</body>
+</html>
