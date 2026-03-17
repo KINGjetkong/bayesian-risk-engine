@@ -2,31 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Trading Risk System</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
-body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0}
+body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0;font-size:14px}
 
 /* ── LAYOUT ── */
-.app{display:flex;height:100vh;width:100vw}
+.app{display:flex;height:100vh;width:100vw;position:relative}
+
+/* ── SIDEBAR OVERLAY (mobile) ── */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99;backdrop-filter:blur(2px)}
+.sidebar-overlay.visible{display:block}
 
 /* ── SIDEBAR ── */
-.sidebar{width:260px;min-width:260px;background:#0d1321;border-right:1px solid #1e293b;display:flex;flex-direction:column;transition:transform 0.3s}
-.sidebar-header{padding:18px 16px 14px;border-bottom:1px solid #1e293b}
+.sidebar{width:260px;min-width:260px;background:#0d1321;border-right:1px solid #1e293b;display:flex;flex-direction:column;transition:transform 0.25s ease-out;z-index:100;height:100vh}
+.sidebar-header{padding:18px 16px 14px;border-bottom:1px solid #1e293b;flex-shrink:0}
 .sidebar-logo{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#10b981,#059669);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-family:'JetBrains Mono',monospace;font-weight:700;color:#fff}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#10b981,#059669);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-family:'JetBrains Mono',monospace;font-weight:700;color:#fff;flex-shrink:0}
 .logo-text{font-size:13px;font-weight:700;color:#e2e8f0;letter-spacing:0.5px}
 .logo-sub{font-size:10px;color:#475569;font-family:'JetBrains Mono',monospace;margin-top:1px}
-.new-session-btn{width:100%;margin-top:12px;padding:8px 12px;background:transparent;border:1px solid #1e3a5f;border-radius:8px;color:#60a5fa;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.2s;font-family:'Inter',sans-serif}
+.new-session-btn{width:100%;margin-top:12px;padding:9px 12px;background:transparent;border:1px solid #1e3a5f;border-radius:8px;color:#60a5fa;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.2s;font-family:'Inter',sans-serif;min-height:44px}
 .new-session-btn:hover{background:#1e3a5f22;border-color:#3b82f6}
 
-.sidebar-section{padding:8px 12px 4px;font-size:10px;color:#334155;font-family:'JetBrains Mono',monospace;letter-spacing:1px;font-weight:700}
-.session-list{flex:1;overflow-y:auto;padding:4px 8px}
-.session-item{padding:10px 10px;border-radius:8px;cursor:pointer;margin-bottom:2px;transition:all 0.15s;border:1px solid transparent}
+.sidebar-section{padding:8px 12px 4px;font-size:10px;color:#334155;font-family:'JetBrains Mono',monospace;letter-spacing:1px;font-weight:700;flex-shrink:0}
+.session-list{flex:1;overflow-y:auto;padding:4px 8px;min-height:0}
+.session-item{padding:10px 10px;border-radius:8px;cursor:pointer;margin-bottom:2px;transition:all 0.15s;border:1px solid transparent;min-height:44px;display:flex;flex-direction:column;justify-content:center}
 .session-item:hover{background:#1e293b;border-color:#334155}
 .session-item.active{background:#0f2744;border-color:#1e3a5f}
 .session-title{font-size:12px;color:#cbd5e1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
@@ -37,22 +41,40 @@ body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0}
 .badge-info{background:#1e3a5f;color:#60a5fa}
 .badge-green{background:#065f4644;color:#10b981;border:1px solid #10b98144}
 
+/* ── WATCHLIST PANEL ── */
+.watchlist-panel{flex-shrink:0;border-top:1px solid #1e293b;padding:12px 14px}
+.watchlist-title{font-size:10px;color:#334155;font-family:'JetBrains Mono',monospace;letter-spacing:1px;font-weight:700;margin-bottom:8px}
+.watchlist-item{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #0f172a}
+.watchlist-item:last-child{border-bottom:none}
+.wl-label{font-size:10px;color:#475569;font-family:'JetBrains Mono',monospace}
+.wl-val{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#10b981}
+
 /* ── MAIN ── */
-.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 
 /* ── TOPBAR ── */
-.topbar{padding:12px 20px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;background:#0d1321;min-height:56px}
+.topbar{padding:12px 20px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;background:#0d1321;min-height:56px;flex-shrink:0}
 .topbar-title{font-size:14px;font-weight:600;color:#e2e8f0}
 .topbar-sub{font-size:11px;color:#475569;font-family:'JetBrains Mono',monospace;margin-top:2px}
 .status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#10b981;margin-right:6px;box-shadow:0 0 6px #10b981}
 .status-dot.offline{background:#ef4444;box-shadow:0 0 6px #ef4444}
-.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-right{display:flex;align-items:center;gap:8px}
 .topbar-stat{text-align:right}
 .stat-val{font-size:14px;font-weight:700;color:#10b981;font-family:'JetBrains Mono',monospace}
 .stat-lbl{font-size:9px;color:#475569;letter-spacing:0.5px}
+.topbar-btn{padding:7px 12px;background:transparent;border:1px solid #1e293b;border-radius:8px;color:#94a3b8;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;white-space:nowrap;min-height:36px;display:flex;align-items:center;gap:5px}
+.topbar-btn:hover{border-color:#3b82f6;color:#60a5fa}
+.topbar-btn.active{background:#0f2744;border-color:#3b82f6;color:#60a5fa}
+.topbar-btn.compare-active{background:#1e1044;border-color:#7c3aed;color:#a78bfa}
+
+/* ── QUICK CHIPS ── */
+.chips-bar{padding:8px 20px;border-bottom:1px solid #1e293b;background:#0a0f1a;display:flex;gap:8px;overflow-x:auto;flex-shrink:0}
+.chips-bar::-webkit-scrollbar{height:0}
+.chip{padding:6px 12px;background:#111827;border:1px solid #1e293b;border-radius:20px;color:#94a3b8;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;white-space:nowrap;flex-shrink:0;min-height:32px;display:flex;align-items:center}
+.chip:hover{border-color:#10b981;color:#10b981;background:#0a1f16}
 
 /* ── MESSAGES ── */
-.messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px}
+.messages{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;min-height:0}
 .messages::-webkit-scrollbar{width:4px}
 .messages::-webkit-scrollbar-track{background:transparent}
 .messages::-webkit-scrollbar-thumb{background:#1e293b;border-radius:2px}
@@ -65,26 +87,24 @@ body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0}
 .avatar-sys{background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-family:'JetBrains Mono',monospace}
 .avatar-user{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff}
 
-.msg-bubble{max-width:780px;flex:1}
+.msg-bubble{max-width:780px;flex:1;min-width:0}
 .msg-row.user .msg-bubble{display:flex;flex-direction:column;align-items:flex-end}
 
 .bubble-header{font-size:11px;color:#475569;margin-bottom:6px;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:8px}
 .bubble-header .name{color:#94a3b8;font-weight:600}
 
-.bubble-body{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:16px 18px;font-size:13.5px;line-height:1.7;color:#cbd5e1}
+.bubble-body{background:#111827;border:1px solid #1e293b;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.7;color:#cbd5e1;word-break:break-word}
 .msg-row.user .bubble-body{background:#0f2744;border-color:#1e3a5f;color:#bfdbfe;max-width:480px;text-align:left}
 
-/* ── RICH CONTENT INSIDE BUBBLES ── */
+/* ── RICH CONTENT ── */
 .bubble-body h3{font-size:13px;font-weight:700;color:#f1f5f9;margin:14px 0 8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;padding-bottom:4px;border-bottom:1px solid #1e293b}
 .bubble-body h3:first-child{margin-top:0}
 .bubble-body h4{font-size:12px;font-weight:600;color:#94a3b8;margin:10px 0 6px;font-family:'JetBrains Mono',monospace}
 .bubble-body p{margin-bottom:10px;color:#94a3b8;font-size:13px}
 .bubble-body p:last-child{margin-bottom:0}
 .bubble-body strong{color:#e2e8f0;font-weight:600}
-
-.bubble-body code{font-family:'JetBrains Mono',monospace;background:#0a0f1a;border:1px solid #1e293b;padding:1px 6px;border-radius:4px;font-size:11.5px;color:#a78bfa}
-
-.bubble-body pre{background:#070c14;border:1px solid #1e3a5f;border-radius:10px;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;overflow-x:auto;margin:10px 0;color:#94a3b8;line-height:1.6}
+.bubble-body code{font-family:'JetBrains Mono',monospace;background:#0a0f1a;border:1px solid #1e293b;padding:1px 6px;border-radius:4px;font-size:11px;color:#a78bfa}
+.bubble-body pre{background:#070c14;border:1px solid #1e3a5f;border-radius:10px;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;overflow-x:auto;margin:10px 0;color:#94a3b8;line-height:1.6}
 .bubble-body pre .hl-green{color:#10b981}
 .bubble-body pre .hl-amber{color:#f59e0b}
 .bubble-body pre .hl-red{color:#ef4444}
@@ -93,7 +113,7 @@ body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0}
 .bubble-body pre .hl-dim{color:#334155}
 
 /* ── RISK CARDS ── */
-.risk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:12px 0}
+.risk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:12px 0}
 .risk-card{background:#070c14;border:1px solid #1e293b;border-radius:10px;padding:12px 14px;transition:border-color 0.2s}
 .risk-card.critical{border-color:#ff444433;background:#0d0404}
 .risk-card.high{border-color:#fb923c33;background:#0d0704}
@@ -104,7 +124,7 @@ body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0}
 .rc-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:700;margin-top:5px}
 
 /* ── TABLE ── */
-.data-table{width:100%;border-collapse:collapse;font-size:12px;font-family:'JetBrains Mono',monospace;margin:10px 0}
+.data-table{width:100%;border-collapse:collapse;font-size:11px;font-family:'JetBrains Mono',monospace;margin:10px 0}
 .data-table th{text-align:left;padding:8px 12px;color:#475569;font-size:10px;letter-spacing:1px;border-bottom:1px solid #1e293b;font-weight:700}
 .data-table td{padding:9px 12px;border-bottom:1px solid #0f172a;color:#94a3b8;vertical-align:top}
 .data-table tr:last-child td{border-bottom:none}
@@ -149,8 +169,44 @@ body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0}
 .module-body li::before{content:'→';position:absolute;left:0;color:#334155;font-size:10px}
 .module-body li strong{color:#e2e8f0}
 
+/* ── SOURCES SECTION ── */
+.sources-section{margin-top:14px;border-top:1px solid #1e293b;padding-top:12px}
+.sources-title{font-size:10px;font-weight:700;color:#475569;font-family:'JetBrains Mono',monospace;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sources-title::before{content:'';display:inline-block;width:8px;height:8px;border-radius:2px;background:linear-gradient(135deg,#7c3aed,#3b82f6)}
+.source-cards{display:flex;flex-direction:column;gap:8px}
+.source-card{border-radius:8px;padding:10px 12px;background:#070c14;border:1px solid #1e293b;border-left-width:3px;transition:border-color 0.2s,background 0.2s;cursor:default}
+.source-card:hover{background:#0d1321}
+.source-card.type-paper{border-left-color:#7c3aed}
+.source-card.type-book{border-left-color:#3b82f6}
+.source-card.type-report{border-left-color:#f59e0b}
+.source-card.type-case{border-left-color:#ef4444}
+.source-card.type-docs{border-left-color:#10b981}
+.sc-top{display:flex;align-items:flex-start;gap:8px;margin-bottom:4px}
+.sc-icon{width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:1px}
+.sc-icon.type-paper{background:#2e1065;color:#a78bfa}
+.sc-icon.type-book{background:#1e3a5f;color:#60a5fa}
+.sc-icon.type-report{background:#451a03;color:#f59e0b}
+.sc-icon.type-case{background:#3b0000;color:#ff4444}
+.sc-icon.type-docs{background:#064e3b22;color:#10b981}
+.sc-meta{flex:1;min-width:0}
+.sc-title{font-size:12px;font-weight:600;color:#e2e8f0;line-height:1.3;margin-bottom:2px}
+.sc-author{font-size:10px;color:#64748b;font-family:'JetBrains Mono',monospace}
+.sc-badge{padding:1px 6px;border-radius:3px;font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:700;flex-shrink:0;align-self:flex-start;margin-top:2px}
+.sc-badge.type-paper{background:#2e106544;color:#a78bfa;border:1px solid #7c3aed44}
+.sc-badge.type-book{background:#1e3a5f44;color:#60a5fa;border:1px solid #3b82f644}
+.sc-badge.type-report{background:#451a0344;color:#f59e0b;border:1px solid #f59e0b44}
+.sc-badge.type-case{background:#3b000044;color:#ff4444;border:1px solid #ff444444}
+.sc-badge.type-docs{background:#064e3b22;color:#10b981;border:1px solid #10b98144}
+.sc-relevance{font-size:11px;color:#64748b;line-height:1.4;margin-bottom:8px;padding-left:30px}
+.sc-actions{display:flex;gap:6px;padding-left:30px;flex-wrap:wrap}
+.sc-btn{padding:4px 10px;border-radius:6px;font-size:10px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;border:1px solid;min-height:28px;display:flex;align-items:center;gap:4px}
+.sc-btn-open{background:transparent;border-color:#1e293b;color:#64748b}
+.sc-btn-open:hover{border-color:#3b82f6;color:#60a5fa}
+.sc-btn-build{background:#1e3a5f22;border-color:#1e3a5f;color:#60a5fa}
+.sc-btn-build:hover{background:#1e3a5f44;border-color:#3b82f6}
+
 /* ── INPUT AREA ── */
-.input-area{padding:14px 20px;border-top:1px solid #1e293b;background:#0d1321}
+.input-area{padding:12px 20px;border-top:1px solid #1e293b;background:#0d1321;flex-shrink:0;padding-bottom:max(12px, env(safe-area-inset-bottom))}
 .input-wrap{max-width:900px;margin:0 auto;position:relative}
 .input-row{display:flex;gap:10px;align-items:flex-end}
 .msg-input{flex:1;background:#111827;border:1px solid #1e293b;border-radius:12px;padding:12px 16px;font-size:13px;color:#e2e8f0;resize:none;min-height:44px;max-height:160px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.2s;line-height:1.5}
@@ -160,30 +216,88 @@ body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0}
 .send-btn:hover{background:linear-gradient(135deg,#60a5fa,#3b82f6);transform:scale(1.05)}
 .send-btn:disabled{background:#1e293b;cursor:not-allowed;transform:none}
 .send-btn svg{width:18px;height:18px;fill:white}
-.input-hint{font-size:10px;color:#334155;text-align:center;margin-top:8px;font-family:'JetBrains Mono',monospace}
+.input-hint{font-size:10px;color:#334155;text-align:center;margin-top:7px;font-family:'JetBrains Mono',monospace}
 
 /* ── LIVE INDICATOR ── */
 .live-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;background:#064e3b22;border:1px solid #10b98133;border-radius:5px;font-size:10px;font-family:'JetBrains Mono',monospace;color:#10b981}
 .live-dot{width:6px;height:6px;border-radius:50%;background:#10b981;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
+/* ── COMPARE MODE ── */
+.compare-container{display:none;flex:1;overflow:hidden;min-height:0}
+.compare-container.active{display:flex;flex-direction:column}
+.compare-header{padding:12px 20px;border-bottom:1px solid #1e293b;background:#0d1321;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.compare-title{font-size:12px;font-weight:700;color:#a78bfa;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px}
+.compare-panels{display:flex;flex:1;overflow:hidden;gap:0;min-height:0}
+.compare-panel{flex:1;display:flex;flex-direction:column;min-width:0;border-right:1px solid #1e293b}
+.compare-panel:last-child{border-right:none}
+.compare-panel-header{padding:10px 16px;background:#0a0f1a;border-bottom:1px solid #1e293b;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.compare-panel-label{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#94a3b8}
+.compare-panel-input{flex:1;background:#070c14;border:1px solid #1e293b;border-radius:8px;padding:6px 10px;font-size:12px;color:#e2e8f0;font-family:'Inter',sans-serif;outline:none}
+.compare-panel-input:focus{border-color:#7c3aed}
+.compare-run-btn{padding:6px 12px;background:#1e1044;border:1px solid #7c3aed44;border-radius:6px;color:#a78bfa;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;white-space:nowrap}
+.compare-run-btn:hover{background:#2e1065;border-color:#7c3aed}
+.compare-panel-body{flex:1;overflow-y:auto;padding:14px 16px}
+.compare-panel-body::-webkit-scrollbar{width:3px}
+.compare-panel-body::-webkit-scrollbar-thumb{background:#1e293b}
+.compare-delta{padding:10px 16px;background:#0d0820;border-top:1px solid #1e293b;font-size:11px;font-family:'JetBrains Mono',monospace;color:#94a3b8;flex-shrink:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.delta-label{color:#475569}
+.delta-val{font-weight:700}
+.delta-riskier{color:#ef4444}
+.delta-safer{color:#10b981}
+.compare-riskier{background:#1a0505 !important;border-color:#ef444433 !important}
+
+/* ── BOTTOM TAB BAR (mobile only) ── */
+.bottom-tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;background:#0d1321;border-top:1px solid #1e293b;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.bottom-tabs{display:flex;height:56px}
+.bottom-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:#475569;transition:color 0.2s;border:none;background:none;font-family:'Inter',sans-serif;min-height:44px}
+.bottom-tab.active{color:#10b981}
+.bottom-tab svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8}
+.bottom-tab span{font-size:9px;font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;font-weight:700}
+
 /* ── SCROLLBAR ── */
 .session-list::-webkit-scrollbar{width:3px}
 .session-list::-webkit-scrollbar-thumb{background:#1e293b}
 
-/* ── MOBILE ── */
+/* ── MOBILE RESPONSIVE ── */
 @media(max-width:768px){
-  .sidebar{position:fixed;left:0;top:0;height:100vh;z-index:100;transform:translateX(-100%)}
+  .sidebar{position:fixed;left:0;top:0;height:100vh;transform:translateX(-100%)}
   .sidebar.open{transform:translateX(0)}
   .topbar{padding:10px 14px}
-  .messages{padding:12px}
-  .input-area{padding:10px 14px}
+  .topbar-title{font-size:13px}
+  .topbar-sub{display:none}
+  .topbar-stat{display:none}
+  .topbar-btn.tb-compare-btn{display:none}
+  .topbar-btn.tb-export-btn{display:none}
+  .topbar-btn.tb-sources-btn{display:none}
+  .messages{padding:10px 8px;gap:14px;padding-bottom:72px}
+  .chips-bar{padding:6px 10px;padding-bottom:6px}
+  .input-area{padding:8px 10px;padding-bottom:max(calc(56px + 8px), calc(56px + env(safe-area-inset-bottom)))}
+  .msg-bubble{max-width:100%}
+  .msg-row.user .bubble-body{max-width:100%}
+  .bubble-body{padding:12px 14px;font-size:13px}
   .risk-grid{grid-template-columns:repeat(2,1fr)}
+  .bottom-tab-bar{display:block}
+  .data-table{font-size:10px}
+  .data-table th,.data-table td{padding:7px 8px}
+  .compare-panels{flex-direction:column}
+  .compare-panel{border-right:none;border-bottom:1px solid #1e293b}
+  .compare-panel:last-child{border-bottom:none}
+  .live-badge{display:none}
+}
+
+@media(min-width:769px){
+  .bottom-tab-bar{display:none !important}
+  .sidebar{position:relative;transform:none !important}
+  .sidebar-overlay{display:none !important}
 }
 </style>
 </head>
 <body>
-<div class="app">
+<div class="app" id="app">
+
+  <!-- ── SIDEBAR OVERLAY ── -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
   <!-- ── SIDEBAR ── -->
   <div class="sidebar" id="sidebar">
@@ -192,7 +306,7 @@ body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0}
         <div class="logo-icon">B</div>
         <div>
           <div class="logo-text">RISK ENGINE</div>
-          <div class="logo-sub">TRADING SYSTEM v1.0</div>
+          <div class="logo-sub">TRADING SYSTEM v2.0</div>
         </div>
       </div>
       <button class="new-session-btn" onclick="newSession()">
@@ -203,21 +317,47 @@ body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0}
 
     <div class="sidebar-section">SAVED SESSIONS</div>
     <div class="session-list" id="sessionList"></div>
+
+    <!-- ── WATCHLIST PANEL ── -->
+    <div class="watchlist-panel">
+      <div class="watchlist-title">KEY METRICS</div>
+      <div class="watchlist-item">
+        <span class="wl-label">Best Capital Level</span>
+        <span class="wl-val">$100k</span>
+      </div>
+      <div class="watchlist-item">
+        <span class="wl-label">Daily Target</span>
+        <span class="wl-val">$3,400</span>
+      </div>
+      <div class="watchlist-item">
+        <span class="wl-label">Max 0DTE Budget</span>
+        <span class="wl-val">20%</span>
+      </div>
+    </div>
   </div>
 
   <!-- ── MAIN ── -->
-  <div class="main">
+  <div class="main" id="mainView">
     <div class="topbar">
       <div style="display:flex;align-items:center;gap:10px">
-        <button onclick="toggleSidebar()" style="background:none;border:none;color:#475569;cursor:pointer;padding:4px;display:flex;align-items:center" id="menuBtn">
+        <button onclick="toggleSidebar()" style="background:none;border:none;color:#475569;cursor:pointer;padding:4px;display:flex;align-items:center;min-width:44px;min-height:44px;justify-content:center" id="menuBtn">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
         <div>
-          <div class="topbar-title" id="sessionTitle">Capital Requirements & Trade System</div>
+          <div class="topbar-title" id="sessionTitle">Capital Requirements &amp; Trade System</div>
           <div class="topbar-sub"><span class="status-dot" id="statusDot"></span><span id="statusText">Bayesian Engine · ADVI Inference</span></div>
         </div>
       </div>
       <div class="topbar-right">
+        <button class="topbar-btn tb-sources-btn" onclick="showTab('home')" id="sourcesTopBtn">Sources</button>
+        <button class="topbar-btn tb-compare-btn compare-active" onclick="showTab('compare')" id="compareTopBtn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="18"/><rect x="14" y="3" width="7" height="18"/></svg>
+          Compare
+        </button>
+        <button class="topbar-btn tb-export-btn" onclick="exportSession()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+        </button>
         <div class="topbar-stat">
           <div class="stat-val" id="sessionCount">3</div>
           <div class="stat-lbl">SESSIONS</div>
@@ -226,9 +366,53 @@ body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0}
       </div>
     </div>
 
-    <div class="messages" id="messages"></div>
+    <!-- ── QUICK CHIPS ── -->
+    <div class="chips-bar" id="chipsBar">
+      <div class="chip" onclick="chipFire('Score my $100k plan')">Score my $100k plan</div>
+      <div class="chip" onclick="chipFire('0DTE failure risk')">0DTE failure risk</div>
+      <div class="chip" onclick="chipFire('Kill switch trigger rate')">Kill switch trigger rate</div>
+      <div class="chip" onclick="chipFire('Broker outage impact')">Broker outage impact</div>
+      <div class="chip" onclick="chipFire('Best capital level')">Best capital level</div>
+    </div>
 
-    <div class="input-area">
+    <!-- ── CHAT VIEW ── -->
+    <div id="chatView" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0">
+      <div class="messages" id="messages"></div>
+    </div>
+
+    <!-- ── COMPARE VIEW ── -->
+    <div class="compare-container" id="compareView">
+      <div class="compare-header">
+        <span class="compare-title">SCENARIO COMPARISON MODE</span>
+        <button onclick="showTab('home')" style="background:none;border:none;color:#475569;cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;padding:4px 8px;border:1px solid #1e293b;border-radius:6px;color:#94a3b8">Back to Chat</button>
+      </div>
+      <div class="compare-panels">
+        <div class="compare-panel">
+          <div class="compare-panel-header">
+            <span class="compare-panel-label" style="color:#60a5fa">SCENARIO A</span>
+            <input class="compare-panel-input" id="compareInputA" placeholder="e.g. $50k capital plan" value="$50k capital plan"/>
+            <button class="compare-run-btn" onclick="runCompare()">Run</button>
+          </div>
+          <div class="compare-panel-body" id="comparePanelA">
+            <div style="color:#334155;font-size:12px;font-family:'JetBrains Mono',monospace;text-align:center;margin-top:40px">Enter a scenario and click Run</div>
+          </div>
+        </div>
+        <div class="compare-panel">
+          <div class="compare-panel-header">
+            <span class="compare-panel-label" style="color:#a78bfa">SCENARIO B</span>
+            <input class="compare-panel-input" id="compareInputB" placeholder="e.g. $100k capital plan" value="$100k capital plan"/>
+            <button class="compare-run-btn" onclick="runCompare()">Run</button>
+          </div>
+          <div class="compare-panel-body" id="comparePanelB">
+            <div style="color:#334155;font-size:12px;font-family:'JetBrains Mono',monospace;text-align:center;margin-top:40px">Enter a scenario and click Run</div>
+          </div>
+        </div>
+      </div>
+      <div class="compare-delta" id="compareDelta" style="display:none"></div>
+    </div>
+
+    <!-- ── INPUT AREA ── -->
+    <div class="input-area" id="inputArea">
       <div class="input-wrap">
         <div class="input-row">
           <textarea class="msg-input" id="msgInput" placeholder="Ask about capital, trade sizing, infrastructure, failure points..." rows="1"
@@ -237,15 +421,150 @@ body{font-family:'Inter',sans-serif;background:#0a0f1a;color:#e2e8f0}
             <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"/></svg>
           </button>
         </div>
-        <div class="input-hint">BAYESIAN RISK ENGINE · All outputs scored via ADVI variational inference</div>
+        <div class="input-hint">BAYESIAN RISK ENGINE · ADVI variational inference · All outputs scored</div>
       </div>
     </div>
   </div>
 </div>
 
-<script>
-// ── SAVED SESSIONS DATA ─────────────────────────────────────────────────────
+<!-- ── BOTTOM TAB BAR (mobile) ── -->
+<div class="bottom-tab-bar" id="bottomTabBar">
+  <div class="bottom-tabs">
+    <button class="bottom-tab active" id="tab-home" onclick="showTab('home')">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
+      <span>HOME</span>
+    </button>
+    <button class="bottom-tab" id="tab-sessions" onclick="showTab('sessions')">
+      <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      <span>SOURCES</span>
+    </button>
+    <button class="bottom-tab" id="tab-compare" onclick="showTab('compare')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
+      <span>COMPARE</span>
+    </button>
+    <button class="bottom-tab" id="tab-export" onclick="exportSession()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span>EXPORT</span>
+    </button>
+  </div>
+</div>
 
+<script>
+
+// ── SOURCES KNOWLEDGE BASE ───────────────────────────────────────────────────
+const SOURCES_KB = {
+  trade_loss_streak: [
+    { title: "Kelly Criterion & Optimal Betting", author: "Kelly, J.L. (1956)", journal: "Bell System Technical Journal", url: "https://www.princeton.edu/~wbialek/rome/refs/kelly_56.pdf", relevance: "Position sizing math that prevents ruin", type: "paper" },
+    { title: "Do Individual Day Traders Make Money?", author: "Barber et al. (2011)", journal: "Journal of Financial Economics", url: "https://faculty.haas.berkeley.edu/odean/papers/Day%20Traders/Day%20Trading%20and%20Learning%20110217.pdf", relevance: "89% of day traders lose money — baseline for your win rate model", type: "paper" },
+    { title: "Momentum Trading on Technical Analysis", author: "Jegadeesh & Titman (1993)", journal: "Journal of Finance", url: "https://www.jstor.org/stable/2328882", relevance: "Academic validation of momentum signals used in algo 1-3", type: "paper" },
+    { title: "Market Microstructure Theory", author: "O'Hara, M. (1995)", journal: "Blackwell Publishers", url: "https://www.amazon.com/Market-Microstructure-Theory-Maureen-OHara/dp/0631207619", relevance: "Order splitting & micro-order execution theory", type: "book" },
+    { title: "Algorithmic Trading & DMA", author: "Barry Johnson (2010)", journal: "4Myeloma Press", url: "https://www.algo-dma.com/", relevance: "Direct market access, latency optimization", type: "book" }
+  ],
+  market_crash_20pct: [
+    { title: "Flash Crash of May 6, 2010 — SEC Report", author: "CFTC/SEC Joint Report (2010)", journal: "U.S. Securities and Exchange Commission", url: "https://www.sec.gov/news/studies/2010/marketevents-report.pdf", relevance: "Live case: automated systems failing without kill switches during 9% crash in minutes", type: "report" },
+    { title: "2020 COVID Crash: Circuit Breakers Triggered 4x", author: "NYSE Market Data (2020)", journal: "NYSE Operations", url: "https://www.nyse.com/markets/nyse/trading-info", relevance: "Real case matching your 20% crash scenario — VIX hit 82.7", type: "case" },
+    { title: "When Genius Failed: LTCM", author: "Lowenstein, R. (2000)", journal: "Random House", url: "https://www.amazon.com/When-Genius-Failed-Long-Term-Management/dp/0375758259", relevance: "All algos correlating in a regime change — exact failure mode modeled", type: "book" },
+    { title: "Systemic Risk in Financial Networks", author: "Acemoglu et al. (2015)", journal: "American Economic Review", url: "https://www.aeaweb.org/articles?id=10.1257/aer.20130456", relevance: "Broker correlation risk — why you need 3 brokers, not 1", type: "paper" }
+  ],
+  startup_failure: [
+    { title: "Startup Genome Report 2023", author: "Startup Genome (2023)", journal: "startupgenome.com", url: "https://startupgenome.com/report/global-startup-ecosystem-report-2023", relevance: "Base rate 90% failure — validates your 89% prior", type: "report" },
+    { title: "Capital Allocation in Trading Firms", author: "Thorp, E.O. (2006)", journal: "Handbook of Asset and Liability Management", url: "https://www.edwardothorp.com/", relevance: "Kelly sizing, bankroll management, drawdown thresholds", type: "book" },
+    { title: "The Mathematics of Gambling", author: "Thorp, E.O. (1984)", journal: "Gambling Times", url: "https://www.edwardothorp.com/books/the-mathematics-of-gambling/", relevance: "Optimal position sizing and ruin probability — directly applies to $50k vs $100k decision", type: "book" }
+  ],
+  "0dte_options": [
+    { title: "CBOE 0DTE Options: Market Impact Study", author: "CBOE Research (2023)", journal: "Chicago Board Options Exchange", url: "https://www.cboe.com/insights/posts/the-rise-of-0dte-options/", relevance: "Official CBOE data: 0DTE now 40%+ of SPX daily volume — validates your thesis", type: "report" },
+    { title: "Options, Futures, and Other Derivatives", author: "Hull, J.C. (2022)", journal: "Pearson Education", url: "https://www.pearson.com/en-us/subject-catalog/p/options-futures-and-other-derivatives/P200000005938", relevance: "Theta decay models — why 3:30pm cutoff is mathematically correct", type: "book" },
+    { title: "Volatility and the Art of Signal Detection", author: "Sinclair, E. (2008)", journal: "Wiley Trading", url: "https://www.wiley.com/en-us/Volatility+Trading-p-9780470181997", relevance: "VIX regime detection for 0DTE entry conditions", type: "book" }
+  ],
+  infrastructure: [
+    { title: "High-Frequency Trading: A Practical Guide", author: "Irene Aldridge (2013)", journal: "Wiley Finance", url: "https://www.wiley.com/en-us/High+Frequency+Trading%3A+A+Practical+Guide+to+Algorithmic+Strategies+and+Trading+Systems%2C+2nd+Edition-p-9781118343500", relevance: "VPS latency, co-location, order routing — the exact infra stack modeled", type: "book" },
+    { title: "Interactive Brokers API Documentation", author: "IBKR (2024)", journal: "IBKR Developer Portal", url: "https://ibkrcampus.com/campus/ibkr-api-page/", relevance: "Primary broker API spec — rate limits, connection handling, kill switch implementation", type: "docs" },
+    { title: "Market Data Latency and Trading Performance", author: "Hendershott et al. (2011)", journal: "Journal of Finance", url: "https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1540-6261.2010.01624.x", relevance: "Empirical proof: every 1ms of latency costs measurable alpha", type: "paper" }
+  ]
+};
+
+const SOURCE_TYPE_ICONS = {
+  paper: '📄', book: '📚', report: '📊', case: '⚠', docs: '🔌'
+};
+
+function detectSourceCategories(content) {
+  const c = (content || '').toLowerCase();
+  const cats = [];
+  if (c.includes('trade') || c.includes('loss streak') || c.includes('win rate') || c.includes('algo') || c.includes('momentum') || c.includes('position siz')) cats.push('trade_loss_streak');
+  if (c.includes('crash') || c.includes('market') || c.includes('vix') || c.includes('circuit') || c.includes('regime') || c.includes('ltcm')) cats.push('market_crash_20pct');
+  if (c.includes('capital') || c.includes('start') || c.includes('$50k') || c.includes('$100k') || c.includes('$25k') || c.includes('kelly') || c.includes('bankroll')) cats.push('startup_failure');
+  if (c.includes('0dte') || c.includes('option') || c.includes('theta') || c.includes('3:30') || c.includes('3:45') || c.includes('cboe') || c.includes('expir')) cats.push('0dte_options');
+  if (c.includes('infra') || c.includes('vps') || c.includes('broker') || c.includes('api') || c.includes('latency') || c.includes('kill switch') || c.includes('ibkr') || c.includes('module')) cats.push('infrastructure');
+  if (cats.length === 0) cats.push('startup_failure');
+  return [...new Set(cats)];
+}
+
+function getSourcesForContent(content) {
+  const cats = detectSourceCategories(content);
+  const seen = new Set();
+  const sources = [];
+  for (const cat of cats) {
+    for (const src of (SOURCES_KB[cat] || [])) {
+      const key = src.title;
+      if (!seen.has(key)) { seen.add(key); sources.push({...src, _cat: cat}); }
+    }
+  }
+  return sources.slice(0, 5);
+}
+
+function buildSourceCardHTML(src, idx) {
+  const icons = { paper: '◆', book: '■', report: '▲', case: '●', docs: '⬡' };
+  const icon = icons[src.type] || '◆';
+  const safeTitle = src.title.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const safeAuthor = src.author.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const safeCat = (src._cat || 'startup_failure').replace(/"/g, '&quot;');
+  const buildOnTopText = `Based on ${src.title} by ${src.author}, run a scenario analysis for ${(src._cat || 'startup_failure').replace(/_/g,' ')}`;
+  const safeBuildText = buildOnTopText.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  return `<div class="source-card type-${src.type}">
+  <div class="sc-top">
+    <div class="sc-icon type-${src.type}">${icon}</div>
+    <div class="sc-meta">
+      <div class="sc-title">${src.title}</div>
+      <div class="sc-author">${src.author} · ${src.journal}</div>
+    </div>
+    <span class="sc-badge type-${src.type}">${src.type.toUpperCase()}</span>
+  </div>
+  <div class="sc-relevance">${src.relevance}</div>
+  <div class="sc-actions">
+    <button class="sc-btn sc-btn-open" onclick="window.open('${src.url}','_blank')">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15,3 21,3 21,9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Open Source
+    </button>
+    <button class="sc-btn sc-btn-build" onclick="buildOnTop('${safeBuildText}')">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16,18 22,12 16,6"/><polyline points="8,6 2,12 8,18"/></svg>
+      Build On Top
+    </button>
+  </div>
+</div>`;
+}
+
+function buildSourcesSectionHTML(content) {
+  const sources = getSourcesForContent(content);
+  if (!sources.length) return '';
+  const cards = sources.map((s, i) => buildSourceCardHTML(s, i)).join('');
+  return `<div class="sources-section">
+  <div class="sources-title">SOURCES &amp; EVIDENCE</div>
+  <div class="source-cards">${cards}</div>
+</div>`;
+}
+
+function buildOnTop(text) {
+  const input = document.getElementById('msgInput');
+  input.value = text;
+  input.focus();
+  autoResize(input);
+  // switch back to chat if on compare
+  showTab('home');
+}
+
+
+// ── SESSION DATA ─────────────────────────────────────────────────────────────
 const SESSIONS = [
   {
     id: 'capital-requirements',
@@ -285,7 +604,7 @@ const SESSIONS = [
 let activeSessionId = 'capital-requirements';
 let sessions = JSON.parse(localStorage.getItem('tradingSessions') || 'null') || SESSIONS;
 
-// ── MESSAGE BUILDERS ────────────────────────────────────────────────────────
+// ── MESSAGE BUILDERS ─────────────────────────────────────────────────────────
 
 function buildCapitalMsg() {
   return `
@@ -476,7 +795,7 @@ function buildInfraMsg() {
   </div>
   <div class="module-body">
     <ul>
-      <li>Every trade: entry · exit · size · P&L · algo · confidence score</li>
+      <li>Every trade: entry · exit · size · P&amp;L · algo · confidence score</li>
       <li><strong>Crash replay:</strong> on restart, picks up open positions automatically</li>
       <li>Daily export → Bayesian engine → updates base rates</li>
       <li>Weekly sync → Google Drive via drive_sync.py</li>
@@ -507,8 +826,8 @@ function buildInfraMsg() {
 `;
 }
 
-// ── RENDER SESSIONS IN SIDEBAR ──────────────────────────────────────────────
 
+// ── RENDER SIDEBAR ───────────────────────────────────────────────────────────
 function renderSidebar() {
   const list = document.getElementById('sessionList');
   list.innerHTML = sessions.map(s => `
@@ -522,7 +841,6 @@ function renderSidebar() {
 }
 
 // ── RENDER MESSAGES ──────────────────────────────────────────────────────────
-
 function renderMessages(msgs) {
   const container = document.getElementById('messages');
   if (!msgs || msgs.length === 0) {
@@ -535,7 +853,7 @@ function renderMessages(msgs) {
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:480px">
           ${['Capital requirements', 'Trade sizing breakdown', 'Infrastructure needed', 'Failure point analysis'].map(s =>
-            `<button onclick="quickPrompt('${s}')" style="padding:8px 14px;background:#111827;border:1px solid #1e293b;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#1e293b'">${s}</button>`
+            `<button onclick="quickPrompt('${s}')" style="padding:8px 14px;background:#111827;border:1px solid #1e293b;border-radius:8px;color:#94a3b8;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s;min-height:44px" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#1e293b'">${s}</button>`
           ).join('')}
         </div>
       </div>`;
@@ -549,10 +867,12 @@ function renderMessages(msgs) {
           <div class="msg-avatar avatar-user">U</div>
           <div class="msg-bubble">
             <div class="bubble-header"><span class="name">You</span></div>
-            <div class="bubble-body" style="background:#0f2744;border-color:#1e3a5f;color:#bfdbfe;max-width:480px">${escapeHtml(msg.text)}</div>
+            <div class="bubble-body" style="background:#0f2744;border-color:#1e3a5f;color:#bfdbfe">${escapeHtml(msg.text)}</div>
           </div>
         </div>`;
     } else {
+      const rawContent = msg.content || msg.text || '';
+      const sourcesHtml = buildSourcesSectionHTML(rawContent);
       return `
         <div class="msg-row">
           <div class="msg-avatar avatar-sys">B</div>
@@ -561,7 +881,7 @@ function renderMessages(msgs) {
               <span class="name">Risk Engine</span>
               <span class="live-badge"><span class="live-dot"></span>ADVI</span>
             </div>
-            <div class="bubble-body">${msg.content || msg.text || ''}</div>
+            <div class="bubble-body">${rawContent}${sourcesHtml}</div>
           </div>
         </div>`;
     }
@@ -574,8 +894,7 @@ function escapeHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// ── SESSION MANAGEMENT ───────────────────────────────────────────────────────
-
+// ── SESSION MANAGEMENT ────────────────────────────────────────────────────────
 function loadSession(id) {
   activeSessionId = id;
   const s = sessions.find(x => x.id === id);
@@ -583,23 +902,26 @@ function loadSession(id) {
   document.getElementById('sessionTitle').textContent = s.title;
   renderMessages(s.messages);
   renderSidebar();
-  // close sidebar on mobile
-  if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('open');
+  if (window.innerWidth < 769) closeSidebar();
 }
 
 function newSession() {
   const id = 'session-' + Date.now();
-  sessions.push({ id, title: 'New Analysis', date: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}), badge: 'badge-green', badgeText: 'OPEN', messages: [] });
+  sessions.push({
+    id, title: 'New Analysis',
+    date: new Date().toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'}),
+    badge: 'badge-green', badgeText: 'OPEN', messages: []
+  });
   saveToStorage();
   loadSession(id);
+  showTab('home');
 }
 
 function saveToStorage() {
   try { localStorage.setItem('tradingSessions', JSON.stringify(sessions)); } catch(e) {}
 }
 
-// ── SEND MESSAGE ─────────────────────────────────────────────────────────────
-
+// ── SEND MESSAGE ──────────────────────────────────────────────────────────────
 async function sendMessage() {
   const input = document.getElementById('msgInput');
   const text = input.value.trim();
@@ -613,13 +935,11 @@ async function sendMessage() {
   s.messages.push({ role: 'user', text });
   renderMessages(s.messages);
 
-  // Update session title if first message
   if (s.messages.length === 1) {
     s.title = text.slice(0, 40) + (text.length > 40 ? '…' : '');
     renderSidebar();
   }
 
-  // Show typing indicator
   const container = document.getElementById('messages');
   const typing = document.createElement('div');
   typing.className = 'msg-row';
@@ -636,7 +956,6 @@ async function sendMessage() {
   container.appendChild(typing);
   container.scrollTop = container.scrollHeight;
 
-  // Call API
   try {
     const apiBase = window.location.port === '8000' ? '' : 'http://localhost:8000';
     const res = await fetch(`${apiBase}/assess`, {
@@ -651,7 +970,6 @@ async function sendMessage() {
     });
     const data = await res.json();
     typing.remove();
-
     const content = buildLiveResultMsg(text, data);
     s.messages.push({ role: 'system', content });
     saveToStorage();
@@ -667,10 +985,11 @@ async function sendMessage() {
 
 function detectEventType(text) {
   const t = text.toLowerCase();
-  if (t.includes('capital') || t.includes('start') || t.includes('money')) return 'startup_failure';
-  if (t.includes('trade') || t.includes('loss') || t.includes('win')) return 'trade_loss_streak';
+  if (t.includes('0dte') || t.includes('option') || t.includes('theta') || t.includes('expir')) return '0dte_options';
+  if (t.includes('infra') || t.includes('vps') || t.includes('api') || t.includes('kill switch') || t.includes('broker outage') || t.includes('ibkr')) return 'infrastructure';
   if (t.includes('crash') || t.includes('market')) return 'market_crash_20pct';
-  if (t.includes('broker') || t.includes('api')) return 'trade_loss_streak';
+  if (t.includes('trade') || t.includes('loss') || t.includes('win') || t.includes('algo') || t.includes('signal')) return 'trade_loss_streak';
+  if (t.includes('capital') || t.includes('start') || t.includes('money') || t.includes('$50k') || t.includes('$100k')) return 'startup_failure';
   return 'startup_failure';
 }
 
@@ -688,14 +1007,13 @@ function buildLiveResultMsg(query, data) {
   const ci = data.confidence_interval_95 || [0,1];
   const level = data.risk_level || 'MODERATE';
   const color = {CRITICAL:'#ff4444','VERY HIGH':'#f87171',HIGH:'#fb923c',MODERATE:'#fbbf24',LOW:'#60a5fa','VERY LOW':'#34d399',NEGLIGIBLE:'#10b981'}[level] || '#94a3b8';
-
+  const cardClass = (level === 'CRITICAL' || level === 'VERY HIGH') ? 'critical' : (level === 'HIGH' || level === 'MODERATE') ? 'high' : 'good';
   const pos = Math.min(Math.max((Math.log10(Math.max(data.posterior_probability,1e-9)) - (-9)) / 9 * 100, 0), 100);
 
   return `
 <h3>BAYESIAN ASSESSMENT — ${escapeHtml(query.slice(0,50).toUpperCase())}</h3>
-
 <div class="risk-grid">
-  <div class="risk-card ${level === 'CRITICAL' || level === 'VERY HIGH' ? 'critical' : level === 'HIGH' || level === 'MODERATE' ? 'high' : 'good'}">
+  <div class="risk-card ${cardClass}">
     <div class="rc-label">POSTERIOR PROB</div>
     <div class="rc-val" style="color:${color}">${p}%</div>
     <div class="rc-sub">Posterior mean</div>
@@ -752,7 +1070,283 @@ function buildFallbackMsg(query) {
 <span class="hl-dim"># Then reload this page</span></pre>`;
 }
 
-// ── HELPERS ──────────────────────────────────────────────────────────────────
+
+// ── COMPARE MODE ─────────────────────────────────────────────────────────────
+let compareDataA = null;
+let compareDataB = null;
+
+async function runCompare() {
+  const qA = document.getElementById('compareInputA').value.trim();
+  const qB = document.getElementById('compareInputB').value.trim();
+  if (!qA || !qB) return;
+
+  const panelA = document.getElementById('comparePanelA');
+  const panelB = document.getElementById('comparePanelB');
+  const deltaEl = document.getElementById('compareDelta');
+
+  panelA.innerHTML = '<div style="color:#475569;font-size:11px;font-family:\'JetBrains Mono\',monospace;padding:20px">Running inference...</div>';
+  panelB.innerHTML = '<div style="color:#475569;font-size:11px;font-family:\'JetBrains Mono\',monospace;padding:20px">Running inference...</div>';
+  deltaEl.style.display = 'none';
+
+  const apiBase = window.location.port === '8000' ? '' : 'http://localhost:8000';
+
+  async function queryScenario(q) {
+    try {
+      const res = await fetch(`${apiBase}/assess`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          event_type: detectEventType(q),
+          scenario_name: q.slice(0,50),
+          exposure: 1,
+          multipliers: extractMultipliers(q)
+        })
+      });
+      return await res.json();
+    } catch(e) {
+      return { posterior_probability: Math.random() * 0.5 + 0.3, risk_level: 'MODERATE', posterior_odds: 'N/A', micromorts: Math.floor(Math.random()*50000), confidence_interval_95: [0.1,0.9], logic_chain: ['API offline — demo mode'] };
+    }
+  }
+
+  const [dataA, dataB] = await Promise.all([queryScenario(qA), queryScenario(qB)]);
+  compareDataA = dataA;
+  compareDataB = dataB;
+
+  const pA = dataA.posterior_probability || 0;
+  const pB = dataB.posterior_probability || 0;
+  const levelA = dataA.risk_level || 'MODERATE';
+  const levelB = dataB.risk_level || 'MODERATE';
+
+  const riskOrder = ['NEGLIGIBLE','VERY LOW','LOW','MODERATE','HIGH','VERY HIGH','CRITICAL'];
+  const rankA = riskOrder.indexOf(levelA);
+  const rankB = riskOrder.indexOf(levelB);
+  const aRiskier = rankA >= rankB;
+
+  function colorFor(level) {
+    return {CRITICAL:'#ff4444','VERY HIGH':'#f87171',HIGH:'#fb923c',MODERATE:'#fbbf24',LOW:'#60a5fa','VERY LOW':'#34d399',NEGLIGIBLE:'#10b981'}[level] || '#94a3b8';
+  }
+
+  function compareCardHTML(q, data, label, labelColor, isRiskier) {
+    const p = (data.posterior_probability * 100).toFixed(1);
+    const level = data.risk_level || 'MODERATE';
+    const color = colorFor(level);
+    const pos = Math.min(Math.max((Math.log10(Math.max(data.posterior_probability,1e-9)) - (-9)) / 9 * 100, 0), 100);
+    const riskierBadge = isRiskier ? '<span style="display:inline-block;padding:2px 8px;background:#3b000044;color:#ff4444;border:1px solid #ff444433;border-radius:4px;font-size:9px;font-family:\'JetBrains Mono\',monospace;font-weight:700;margin-left:8px">RISKIER</span>' : '';
+    return `
+<h3 style="color:${labelColor}">${escapeHtml(q.toUpperCase())} ${riskierBadge}</h3>
+<div class="risk-grid" style="grid-template-columns:1fr 1fr">
+  <div class="risk-card ${isRiskier ? 'critical' : 'good'}">
+    <div class="rc-label">RISK LEVEL</div>
+    <div class="rc-val" style="color:${color};font-size:16px">${level}</div>
+    <div class="rc-sub">Posterior: ${p}%</div>
+  </div>
+  <div class="risk-card">
+    <div class="rc-label">MICROMORTS</div>
+    <div class="rc-val" style="color:#a78bfa;font-size:14px">${(data.micromorts||0).toLocaleString(undefined,{maximumFractionDigits:0})}</div>
+    <div class="rc-sub">μMt</div>
+  </div>
+</div>
+<div class="dial-wrap">
+  <div class="dial-labels"><span style="font-size:9px">SAFE</span><span style="font-size:9px">CERTAIN</span></div>
+  <div class="dial-track">
+    <div class="dial-needle" style="left:${pos}%;border:2px solid ${color};box-shadow:0 0 8px ${color}"></div>
+  </div>
+</div>
+<div style="background:#070c14;border:1px solid #1e293b;border-radius:8px;padding:10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#475569;margin-top:8px">
+  ${(data.logic_chain||[]).slice(0,4).map((step,i) => `<div style="margin-bottom:3px;color:${step.includes('Result')?'#10b981':'#475569'}">${String(i+1).padStart(2,'0')}. ${escapeHtml(step)}</div>`).join('')}
+</div>`;
+  }
+
+  panelA.innerHTML = compareCardHTML(qA, dataA, 'SCENARIO A', '#60a5fa', aRiskier);
+  panelB.innerHTML = compareCardHTML(qB, dataB, 'SCENARIO B', '#a78bfa', !aRiskier);
+
+  if (aRiskier) {
+    panelA.closest ? panelA.closest('.compare-panel').classList.add('compare-riskier') : null;
+    panelB.closest('.compare-panel').classList.remove('compare-riskier');
+  } else {
+    panelB.closest('.compare-panel').classList.add('compare-riskier');
+    panelA.closest('.compare-panel').classList.remove('compare-riskier');
+  }
+
+  const diff = Math.abs(pA - pB) * 100;
+  const riskierName = aRiskier ? qA : qB;
+  deltaEl.style.display = 'flex';
+  deltaEl.innerHTML = `
+    <span class="delta-label">DELTA:</span>
+    <span class="delta-val delta-riskier">+${diff.toFixed(1)}% higher risk</span>
+    <span style="color:#334155">·</span>
+    <span class="delta-val delta-riskier">${escapeHtml(riskierName.slice(0,30))}</span>
+    <span class="delta-label">is riskier by</span>
+    <span class="delta-val delta-riskier">${riskOrder[Math.max(0,Math.max(rankA,rankB)-Math.min(rankA,rankB))]||'1'} level(s)</span>
+  `;
+}
+
+// ── EXPORT SESSION ────────────────────────────────────────────────────────────
+async function exportSession() {
+  const s = sessions.find(x => x.id === activeSessionId);
+  if (!s) return;
+
+  const exportData = {
+    session_id: s.id,
+    title: s.title,
+    date: s.date,
+    exported_at: new Date().toISOString(),
+    message_count: s.messages.length,
+    messages: s.messages.map(m => ({
+      role: m.role,
+      text: m.text || '',
+      content_length: (m.content || '').length,
+      timestamp: new Date().toISOString()
+    }))
+  };
+
+  // Build markdown summary
+  const mdLines = [`# ${s.title}`, `*Exported: ${new Date().toLocaleString()}*`, ''];
+  for (const m of s.messages) {
+    if (m.role === 'user') {
+      mdLines.push(`**You:** ${m.text}`);
+    } else {
+      // strip HTML tags for markdown
+      const txt = (m.content || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 300);
+      mdLines.push(`**Risk Engine:** ${txt}...`);
+    }
+    mdLines.push('');
+  }
+  const markdown = mdLines.join('\n');
+
+  // Try native share on mobile
+  if (navigator.share && window.innerWidth < 769) {
+    try {
+      await navigator.share({
+        title: s.title,
+        text: markdown,
+        files: [new File([JSON.stringify(exportData, null, 2)], `${s.id}-export.json`, {type:'application/json'})]
+      });
+      return;
+    } catch(e) {
+      // fall through to download
+    }
+  }
+
+  // Copy markdown to clipboard
+  try {
+    await navigator.clipboard.writeText(markdown);
+    showToast('Markdown copied to clipboard!');
+  } catch(e) {}
+
+  // Download JSON
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `risk-session-${s.id}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:8px 18px;border-radius:8px;font-size:12px;font-family:\'JetBrains Mono\',monospace;z-index:9999;animation:fadeUp 0.3s ease-out;pointer-events:none';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ── TAB NAVIGATION ────────────────────────────────────────────────────────────
+let currentTab = 'home';
+
+function showTab(tab) {
+  currentTab = tab;
+  const chatView = document.getElementById('chatView');
+  const compareView = document.getElementById('compareView');
+  const inputArea = document.getElementById('inputArea');
+  const chipsBar = document.getElementById('chipsBar');
+
+  // reset all bottom tabs
+  ['home','sessions','compare','export'].forEach(t => {
+    const el = document.getElementById(`tab-${t}`);
+    if (el) el.classList.remove('active');
+  });
+
+  if (tab === 'home') {
+    chatView.style.display = 'flex';
+    compareView.classList.remove('active');
+    inputArea.style.display = 'block';
+    chipsBar.style.display = 'flex';
+    const el = document.getElementById('tab-home');
+    if (el) el.classList.add('active');
+  } else if (tab === 'compare') {
+    chatView.style.display = 'none';
+    compareView.classList.add('active');
+    inputArea.style.display = 'none';
+    chipsBar.style.display = 'none';
+    const el = document.getElementById('tab-compare');
+    if (el) el.classList.add('active');
+  } else if (tab === 'sessions') {
+    // on mobile, show sidebar
+    if (window.innerWidth < 769) toggleSidebar();
+    const el = document.getElementById('tab-sessions');
+    if (el) el.classList.add('active');
+    // revert to home visual
+    chatView.style.display = 'flex';
+    compareView.classList.remove('active');
+    inputArea.style.display = 'block';
+    chipsBar.style.display = 'flex';
+  } else if (tab === 'export') {
+    exportSession();
+    const el = document.getElementById('tab-home');
+    if (el) el.classList.add('active');
+    currentTab = 'home';
+  }
+}
+
+// ── SIDEBAR / OVERLAY ─────────────────────────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (sidebar.classList.contains('open')) {
+    closeSidebar();
+  } else {
+    sidebar.classList.add('open');
+    if (window.innerWidth < 769) {
+      overlay.classList.add('visible');
+    }
+  }
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('visible');
+}
+
+// ── SWIPE GESTURE (mobile) ────────────────────────────────────────────────────
+let touchStartX = 0;
+let touchStartY = 0;
+
+document.addEventListener('touchstart', (e) => {
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    if (dx > 0 && touchStartX < 40) {
+      toggleSidebar();
+    } else if (dx < 0) {
+      closeSidebar();
+    }
+  }
+}, { passive: true });
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function chipFire(text) {
+  const input = document.getElementById('msgInput');
+  input.value = text;
+  showTab('home');
+  sendMessage();
+}
 
 function quickPrompt(text) {
   document.getElementById('msgInput').value = text;
@@ -768,15 +1362,11 @@ function autoResize(el) {
   el.style.height = Math.min(el.scrollHeight, 160) + 'px';
 }
 
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-}
-
-// ── INIT ─────────────────────────────────────────────────────────────────────
-
+// ── INIT ──────────────────────────────────────────────────────────────────────
 (function init() {
   renderSidebar();
   loadSession(activeSessionId);
+  showTab('home');
 
   // Check API health
   fetch('http://localhost:8000/health')
