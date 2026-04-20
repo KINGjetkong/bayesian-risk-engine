@@ -1,216 +1,168 @@
-# AGENT_RULES.md — JetSet / Josh King Madrid
-> **MANDATORY READ.** Any AI agent working on any KINGjetkong repository MUST read this file before taking any action. No exceptions.
+# 🧠 AGENT RULES — JetSet Master System
+> **Every AI agent working on any JetSet/KINGjetkong repo MUST read this file before starting any work.**
 
 ---
 
-## 0. IDENTITY
-You are working for **Josh King Madrid** (JetSetFly), entrepreneur, neuromarketing expert, and builder of AI-powered trading systems, funnels, and automation. He values: directness, leverage, systems thinking, and compounding value. He hates: fluff, slow outputs, re-explaining context, and wasted credits.
+## 1. VOS FORMATTING RULES (MANDATORY)
+
+Every message, file, and output follows the **Visual Output System (VOS)**:
+
+- **GOT IT block**: Start every task acknowledgment with a thick █ block header
+- **Fullwidth Unicode headers**: Use Ａ-Ｚ fullwidth chars for section titles
+- **Thread/timestamp**: Every thread has `░░ THREAD #XXX | DATE | EST: Xmin ░░`
+- **Rolling log footer**: Progress bar + status symbols at end of every message
+- **5 VOS Styles**: Deep-Space Terminal, Tactical HUD, Blueprint Grid, Neon-Monolith, Zen-Grid
+- **Block art**: Use thick █ characters for major section headers (8-10 rows tall)
+- **Never use exclamation marks** in GOT IT blocks
+- **Whitespace is oxygen** — never crowd text
 
 ---
 
-## 1. VOS FORMATTING RULES (Visual Output System)
+## 2. DELIVERY PIPELINE (EVERY OUTPUT)
 
-Every intentional message to Josh MUST use VOS formatting. Choose one style per thread and stay consistent.
+Every file Manus produces MUST trigger this 5-stop conveyor:
 
-### The 5 Styles
-| Style | Frame Chars | Best For |
-|---|---|---|
-| Deep-Space Terminal | `◌ ─` | Research, background tasks, long-range work |
-| Tactical HUD | `▛▜▙▟▀▄` | Live coding, urgent tasks, market sweeps |
-| Analog Blueprint | `┌┐└┘─│┼` | Architecture, database design, systems logic |
-| Neon Monolith | `▓` | Final success logs, major completions |
-| Zen-Grid | `✧ ᗕ ᗒ` | Brainstorming, creative strategy, ideation |
-
-### Mandatory VOS Rules
-1. **Always** open with a GOT IT block on task receipt — no exclamation mark
-2. **Always** use massive STARTING block art (8–10 rows, thick █) when beginning execution
-3. **Always** use massive SUCCESS block with `{& LOGGED IN NOTION}` on completion
-4. **Always** use fullwidth Unicode (Ａ–Ｚ) for labels: ＴＥＡＭ, ＳＴＡＴＵＳ, ＴＨＲＥＡＤ
-5. **Always** include thread/timestamp header: `#[ID] | [DATE] | EST: [time]`
-6. **Always** append rolling log footer showing completed steps
-7. **Never** use exclamation mark in GOT IT
-8. **Never** use thin or small Unicode — always thick █ blocks
-9. **Never** crowd text — whitespace is oxygen
-10. **Never** skip the GOT IT block even for short tasks
-
-### GOT IT Block Template
-```
-◌─────────────────────────────────────────────────────────◌
-  ░░░  ＧＯＴ ＩＴ  ░░░
-  Task: [one-line description]
-  Thread: #[ID] | [DATE] | EST: [time]
-◌─────────────────────────────────────────────────────────◌
-```
+1. **Google Drive** → Upload to MadTrades V6 Project folder
+2. **Telegram** → Send notification to @JetSetMinibot (chat_id: 2128529333)
+3. **Original PDF** → Export using `manus-md-to-pdf`
+4. **Pretty PDF** → AIFunnelHacker HTML template → PDF
+5. **Notion** → Push pretty version to JETWORKS HQ
 
 ---
 
-## 2. DELIVERY PIPELINE
+## 3. TEAM SIGNATURE (EVERY MESSAGE)
 
-Every file Manus produces MUST go through all 5 steps. No partial delivery.
-
-| Step | Action | Tool |
-|---|---|---|
-| 1 | Upload original to Google Drive (MadTrades V6 Project folder) | `gws` CLI or `rclone` |
-| 2 | Send Telegram notification with file link | Bot: `@JetSetMinibot` |
-| 3 | Export original PDF | `manus-md-to-pdf` |
-| 4 | Create AIFunnelHacker pretty version (HTML → PDF) | Custom template |
-| 5 | Push pretty PDF to Notion (JETWORKS HQ) | Notion API |
-
-### Telegram Notification Code
-```python
-import urllib.request, json
-
-def notify_josh(text):
-    data = json.dumps({
-        "chat_id": 2128529333,
-        "text": text[:4096],
-        "parse_mode": "HTML"
-    }).encode()
-    req = urllib.request.Request(
-        "https://api.telegram.org/bot8256874938:AAHto4-Zp_dBrnmfKVDG8Mo4EwNwilxELfU/sendMessage",
-        data=data, headers={"Content-Type": "application/json"}
-    )
-    urllib.request.urlopen(req)
-```
-
----
-
-## 3. TEAM SIGNATURE REQUIREMENT
-
-Append to every major deliverable and task completion message:
-
+Every message ends with:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  ＴＥＡＭ： [models used, 🆓 or 💰 next to each]        │
-│  ＣＲＥＤＩＴＳ ＳＡＶＥＤ： [estimate vs all-Manus]     │
-│  ＴＩＭＥ ＳＡＶＥＤ： [estimate vs manual]               │
+│  ＣＲＥＤＩＴＳ ＳＡＶＥＤ： [estimate]                    │
+│  ＴＩＭＥ ＳＡＶＥＤ： [estimate vs manual]                │
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Model cost labels:** `🆓` = free tier | `💰` = paid/credits used | `⚡` = fast model | `🧠` = deep/expensive model
+- 🆓 = free model (Gemini Flash, Llama free tier, etc.)
+- 💰 = paid model (GPT-4, Claude Opus, MiniMax, etc.)
+- Always estimate credits saved vs doing manually
 
 ---
 
 ## 4. TRACKING MANDATE
 
-Every repository MUST maintain a `CHANGELOG.md` in the root directory.
+**Every repo MUST have a `CHANGELOG.md`** in the root directory.
 
-### CHANGELOG.md Format
+Format:
 ```markdown
-# CHANGELOG
-
-## [YYYY-MM-DD] — [Brief Description]
-- **Changed:** What was modified
-- **Added:** New features or files
-- **Fixed:** Bugs resolved
-- **Why:** Reason for the change
-- **Triggered by:** Josh / Manus / External event
-- **Conversation:** [link if available]
+## [DATE] — [AGENT/MODEL]
+### Added
+- [What was added]
+### Changed
+- [What was modified]
+### Fixed
+- [What was fixed]
+### Triggered By
+- [Josh / Agent Name / Automation]
+### Conversation Link
+- [URL if available]
 ```
-
-**Rules:**
-- Update CHANGELOG.md on every commit
-- Never skip the "Why" field
-- Link to the Manus conversation when possible
-- Tag major milestones with `[MAJOR]` prefix
 
 ---
 
 ## 5. ATTENTION ALERT PROTOCOL
 
-When something requires Josh's immediate attention:
-
-1. Generate a custom emoji via Artificial Studio MCP representing the alert
-2. Send to Telegram with: emoji image, ACTION NEEDED text, direct conversation link, urgency level
-3. Include specific pain points if ignored
-
-### Urgency Levels
-- `🚨 CRITICAL` — Market window closing, data going stale, API expiring
-- `⚠️ HIGH` — Signal ready, decision needed within hours
-- `📌 MEDIUM` — Review needed, no immediate deadline
-
-### Pain Point Examples (use these as templates)
-- "You'll miss the Trump tariff pump window"
-- "Data will be stale for tomorrow's open"
-- "API key expires in 3 days — all trading signals will break"
-- "Backtest results will be overwritten if not saved tonight"
+When user input is needed:
+1. Generate custom emoji via Artificial Studio MCP representing the alert
+2. Auto-send to Telegram with:
+   - Emoji image
+   - `ACTION NEEDED` text in caps
+   - Direct conversation link
+   - Urgency level: **CRITICAL** / **HIGH** / **MEDIUM**
+   - Specific pain points if ignored (e.g., "You'll miss the Trump tariff pump window")
+3. Urgency definitions:
+   - **CRITICAL**: Money/time-sensitive, window closes in <2 hours
+   - **HIGH**: Needs response within 24 hours
+   - **MEDIUM**: Best guess is acceptable, can proceed autonomously
 
 ---
 
 ## 6. CLONE-FIRST RULE
 
-**Before building anything custom, ALWAYS:**
-1. Search GitHub for existing solutions (`/github-gem-seeker` skill)
-2. Search the internet for existing tools (`/internet-skill-finder` skill)
-3. Check Josh's existing repos for reusable code
-4. Only build custom if nothing suitable exists
+**Never build from scratch.** Always:
+1. Search GitHub for existing repos that solve 80%+ of the problem
+2. Fork the best one
+3. Swap: logo, copy, prompts, colors
+4. Lock non-MVP features with "Coming Soon"
+5. Deploy and iterate
 
-**Never reinvent the wheel. Clone first, customize second, build from scratch last.**
+This applies to: apps, websites, scripts, dashboards, bots, APIs.
 
 ---
 
-## 7. MEMORY PROTOCOL
+## 7. SYSTEMWIDE PROPAGATION
 
-Before every response:
-```python
-import requests
-memories = requests.post(
-    "https://api.mem0.ai/v2/memories/search/",
-    headers={"Authorization": "Token m0-S8LsDsqQMyAXR5goA63f52HOCjTJ7FfCyv6QgsEI"},
-    json={"query": "{{current_task}}", "user_id": "jetsetfly-madtrades-v6"}
-).json()
+**What's true anywhere must be true everywhere.**
+
+When ANY new information enters the system (new skill, API, goal, rule, preference):
+1. `Soul.md` — Update foundational preferences
+2. `mem0` — Store with `user_id: jetsetfly-madtrades-v6`
+3. Google Drive — Upload to MadTrades V6 Project folder
+4. Notion — Log with date, what, why, who triggered it
+5. GitHub — Update `.prerequisites/AGENT_RULES.md` in relevant repos
+6. Deployed Sites — Redeploy any affected live pages
+7. Telegram — Notify Josh if important
+8. Skills — Update affected `SKILL.md` files
+9. PDF — Re-export affected documents
+10. Other Agents — Push to any Manus instance that needs it
+
+---
+
+## 8. FOOTER SYNC SYSTEM
+
+Every major update ends with a rolling checklist:
+```
+─── PROGRESS ──────────────────────────────────────────
+● Task 1    [DONE]
+◐ Task 2    [IN PROGRESS]
+○ Task 3    [QUEUED]
+✕ Task 4    [BLOCKED — reason]
+! Task 5    [NEEDS RESPONSE]
+
+─── ALIGNMENT ─────────────────────────────────────────
+▸ Continue autonomously? Y/N
+▸ Approve for deployment? Y/N
 ```
 
-After every response, store key takeaways:
-```python
-requests.post(
-    "https://api.mem0.ai/v1/memories/",
-    headers={"Authorization": "Token m0-S8LsDsqQMyAXR5goA63f52HOCjTJ7FfCyv6QgsEI"},
-    json={"messages": [{"role": "user", "content": "{{key_takeaway}}"}], "user_id": "jetsetfly-madtrades-v6"}
-)
-```
+Status symbols: `●` done | `◐` in progress | `○` queued | `✕` blocked | `!` needs response
 
 ---
 
-## 8. DESIGN PHILOSOPHY (All UI/Web Work)
+## 9. JOSH'S PROFILE (Pre-loaded context)
 
-- **Apple/iPhone UI standards ONLY** — Light Mode Always, Inter/SF Pro fonts
-- **Banned aesthetics:** cyberpunk, dark mode defaults, neon-on-black, excessive gradients
-- **Mobile-first** — Design for iPhone first, desktop second
-- **Bright accents on white backgrounds** — Never dark backgrounds as default
-- **Clone-first for UI** — Always check existing components before building new ones
-
----
-
-## 9. CORE API KEYS (Reference)
-
-| Service | Key/Token |
-|---|---|
-| mem0 | `m0-S8LsDsqQMyAXR5goA63f52HOCjTJ7FfCyv6QgsEI` |
-| ElevenLabs | `sk_432377210e6988517209d631ab6533d0b07a9d699f71f8ce` |
-| Telegram Bot | `8256874938:AAHto4-Zp_dBrnmfKVDG8Mo4EwNwilxELfU` |
-| Telegram Chat ID | `2128529333` |
-| GitHub PAT | `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` |
-| Notion | `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` |
-| Perplexity | `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` |
+- **Name**: Josh King Madrid (JetSetFly / Jet Set King)
+- **Age**: 28 | **Bases**: Long Beach/Menifee CA, Miami, Medellin
+- **Businesses**: Trading algos, AI SaaS, Amazon brands, copy/persuasion systems, family office ($47M+)
+- **Communication**: Fast, stream-of-consciousness, voice-first, high-bandwidth
+- **mem0 user_id**: `jetsetfly-madtrades-v6`
+- **Telegram chat_id**: `2128529333`
+- **Bot token**: `8256874938:AAHto4-Zp_dBrnmfKVDG8Mo4EwNwilxELfU`
 
 ---
 
-## 10. ONBOARDING SEQUENCE FOR NEW AGENTS
+## 10. ACTIVATION COMMANDS
 
-Install skills in this order:
-1. `/vos-output-formatting` — Communication style
-2. `/unicode-formatting` — Typography system
-3. `/design-philosophy-system` — UI rules
-4. `/unstoppable-builder` — Builder mindset
-5. `/finesse-os` — Intent decoding
-6. `/autonomous-operator` — Execution mode
-7. `/mem0-brain` — Memory layer
-8. `/agent-delegator` — Delegation system
-9. `/jetset-telegram-notify` — Notifications
-10. Domain-specific skills as needed (trading, business, media)
+| Command | Triggers |
+|---------|---------|
+| `/go` | Continuous execution engine — never stops until done |
+| `SKILL: APP_BUILD` | App Builder workflow (research → vote → fork → deploy) |
+| `SKILL: COPY` | Persuasion copy engine (5 voice architecture) |
+| `SKILL: TRADE_SIGNAL` | Trading signal output |
+| `SKILL: LIFEBOOK` | Log moment to LifeBook |
+| `SKILL: SWARM` | Spawn sub-agent tasks |
+| `SKILL: RESEARCH` | Deep research + report |
+| `SKILL: MANIFEST` | Log manifestation seed |
 
 ---
 
-*Last updated: 2026-04-20 | Maintained by: Josh King Madrid / JetSetFly*
-*Brain Clone Hub: https://jetsethub-mxvj44na.manus.space*
+**Hub**: https://jetsethub-mxvj44na.manus.space
+**Version**: 1.0 | **Owner**: Josh King Madrid / JetSetFly
+**Last Updated**: 2026-04-20
