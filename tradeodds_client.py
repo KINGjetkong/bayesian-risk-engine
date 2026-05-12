@@ -6,7 +6,7 @@ logger = logging.getLogger("TradeOddsClient")
 
 class TradeOddsClient:
     def __init__(self, api_key: str = None):
-        self.api_key = api_key or os.getenv("TRADEODDS_API_KEY")
+        self.api_key = api_key or os.getenv("TRADEODDS_API_KEY") or "sk-to-cdf3decdf98ad6ed64a01bf7cc6db30c"
         self.base_url = "https://tradeodds-production.up.railway.app"
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -25,13 +25,29 @@ class TradeOddsClient:
         url = f"{self.base_url}/api/v1/analyze"
         
         # Default analysis payload for pre-market prior
-        # Looking for similar historical scenarios based on recent price action
+        # Using the full 16-factor DNA fingerprint for high-conviction priors
         payload = {
             "symbol": symbol,
+            "reference_period": "1d",
+            "forward_period": "1d",
             "conditions": {
-                "daily_change": {"operator": "between", "value": [-0.01, 0.01]},
-                "rsi": {"operator": "between", "value": [30, 70]}
-            }
+                "daily_change": True,
+                "magnitude": True,
+                "vix_level": True,
+                "vix_move": True,
+                "regime": True,
+                "rel_vol": True,
+                "rsi_zone": True,
+                "rsi_slope": True,
+                "structure_precision": True,
+                "streak": True,
+                "volume_streak": True,
+                "month_of_year": True,
+                "earnings_prox": True,
+                "overnight_gap": True,
+                "macro_risk": True
+            },
+            "lookback_years": "max"
         }
 
         try:
