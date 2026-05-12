@@ -20,6 +20,7 @@ import logging
 import json
 import os
 from datetime import datetime
+from tradeodds_client import TradeOddsClient
 
 # ─── CONFIGURATION ────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
@@ -233,7 +234,25 @@ def assess_risk(scenario: ScenarioRequest):
     posterior probability, 95% CI, micromorts, and a full logic chain.
     """
     # 1. Resolve Base Rate
-    if scenario.custom_base_rate:
+    source = "Unknown"
+    base_sigma = 0.5
+
+    # Check for TradeOdds dynamic prior if it's a trading event
+    if scenario.event_type in ["SPY_0DTE", "QQQ_0DTE", "trade_loss_streak", "market_crash_20pct"]:
+        symbol = "SPY" if "SPY" in scenario.event_type else "QQQ"
+        client = TradeOddsClient()
+        dynamic_prior = client.get_market_prior(symbol)
+        if dynamic_prior:
+            base_rate = dynamic_prior
+            base_sigma = 0.15 # Higher confidence in dynamic prior
+            source = f"TradeOdds Pro (Dynamic {symbol} Prior)"
+        else:
+            # Fallback to Data Lake
+            data = DATA_LAKE.get(scenario.event_type, DATA_LAKE.get("trade_loss_streak"))
+            base_rate = data["base_rate"]
+            base_sigma = data["uncertainty"]
+            source = data["source"] + " (Fallback)"
+    elif scenario.custom_base_rate:
         base_rate = scenario.custom_base_rate
         base_sigma = 0.5
         source = "User Input (Custom)"
