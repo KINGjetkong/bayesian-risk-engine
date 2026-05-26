@@ -21,6 +21,7 @@ import json
 import os
 from datetime import datetime
 from tradeodds_client import TradeOddsClient
+from risk_sizing import RiskSizingInput, calculate_position_size, result_to_dict
 
 # ─── CONFIGURATION ────────────────────────────────────────────────
 logging.basicConfig(level=logging.INFO)
@@ -143,6 +144,22 @@ class RiskResponse(BaseModel):
 class BatchRequest(BaseModel):
     scenarios: List[ScenarioRequest]
 
+class PositionSizingRequest(BaseModel):
+    account_equity: float = Field(..., gt=0, description="Current account equity in dollars")
+    signal_confidence: float = Field(..., description="Signal confidence as 0-100 or 0-1")
+    entry_price: float = Field(..., gt=0, description="Option entry premium")
+    stop_price: float = Field(..., gt=0, description="Option stop premium")
+    atr: Optional[float] = Field(None, description="Underlying or option ATR used as a volatility floor")
+    current_drawdown_pct: float = Field(0.0, ge=0, description="Portfolio drawdown as decimal, e.g. 0.04")
+    daily_loss_pct: float = Field(0.0, ge=0, description="Current daily realized loss as decimal")
+    consecutive_losses: int = Field(0, ge=0, description="Consecutive losing trades today")
+    win_probability: Optional[float] = Field(None, ge=0, le=1, description="Estimated win probability for Kelly cap")
+    payoff_ratio: Optional[float] = Field(None, gt=0, description="Average win / average loss for Kelly cap")
+    liquidity_score: float = Field(1.0, ge=0, le=1, description="0-1 liquidity quality score from spread/OI/volume")
+    max_account_risk_pct: float = Field(0.01, gt=0, le=0.05, description="Max account risk per trade")
+    max_position_notional_pct: float = Field(0.25, gt=0, le=1, description="Max notional exposure cap")
+    contract_multiplier: int = Field(100, gt=0, description="Options contract multiplier")
+
 # ─── LAYER 3: BAYESIAN KERNEL (PyMC) ──────────────────────────────
 
 def run_bayesian_inference(base_rate: float, base_sigma: float, exposure: float, multipliers: List[Multiplier]):
@@ -213,7 +230,7 @@ def classify_risk_level(prob: float) -> str:
 
 @app.get("/")
 def root():
-    return {"message": "Bayesian Risk Engine v1.0 | GET /datalake | POST /assess | POST /batch"}
+    return {"message": "Bayesian Risk Engine v1.0 | GET /datalake | POST /assess | POST /batch | POST /position-size | POST /risk-gate"}
 
 @app.get("/datalake")
 def get_datalake():
@@ -320,6 +337,36 @@ def batch_assess(batch: BatchRequest):
         except Exception as e:
             results.append({"scenario": scenario.event_type, "error": str(e)})
     return {"batch_results": results, "count": len(results)}
+
+@app.post("/position-size")
+def position_size(request: PositionSizingRequest):
+    """Return a confidence/drawdown/Kelly-gated 0DTE options position size.
+
+    This endpoint implements the highest-priority research takeaways around
+    dynamic position sizing, strict drawdown controls, liquidity-aware sizing,
+    and capped fractional Kelly risk. It is intentionally broker-agnostic so
+    execution engines can call it before placing Tradier/IBKR/Alpaca orders.
+    """
+    try:
+        result = calculate_position_size(RiskSizingInput(**request.dict()))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return result_to_dict(result)
+
+@app.post("/risk-gate")
+def risk_gate(request: PositionSizingRequest):
+    """Compact allow/reduce/block gate for trading agents and execution code."""
+    try:
+        result = calculate_position_size(RiskSizingInput(**request.dict()))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {
+        "allowed": result.decision in {"ALLOW", "REDUCE"},
+        "decision": result.decision,
+        "contracts": result.contracts,
+        "effective_risk_pct": result.effective_risk_pct,
+        "reasons": result.reasons,
+    }
 
 @app.get("/health")
 def health():
