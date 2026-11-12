@@ -1,0 +1,1211 @@
+<title>Bayesian Fluid Engine</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: dense instrument-panel grid — domains as swim lanes, nodes as living particles */
+/* Dark-first instrument panel — 200-node Bayesian probability field */
+:root {
+  --bg: #0c0e12;
+  --bg-2: #12151b;
+  --bg-3: #181c24;
+  --fg: #e8e6e1;
+  --fg-2: #9b9a95;
+  --fg-3: #5e5d58;
+  --accent: #3987e5;
+  --accent-2: #2a78d6;
+  --green: #1baf7a;
+  --orange: #eb6834;
+  --red: #e34948;
+  --yellow: #eda100;
+  --magenta: #e87ba4;
+  --violet: #6250d6;
+
+  --dom-order-flow: #3987e5;
+  --dom-intraday: #1baf7a;
+  --dom-macro: #eb6834;
+  --dom-options: #e87ba4;
+  --dom-micro: #6250d6;
+  --dom-regime: #eda100;
+  --dom-timing: #e34948;
+  --dom-risk: #9b9a95;
+
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f5f4f1;
+    --bg-2: #edecea;
+    --bg-3: #e3e2df;
+    --fg: #0b0b0b;
+    --fg-2: #52514e;
+    --fg-3: #8a8985;
+    --accent: #2a78d6;
+    --accent-2: #3987e5;
+    --dom-order-flow: #2a78d6;
+    --dom-intraday: #008300;
+    --dom-macro: #d95926;
+    --dom-options: #d55181;
+    --dom-micro: #6250d6;
+    --dom-regime: #c98500;
+    --dom-timing: #e34948;
+    --dom-risk: #52514e;
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f5f4f1;
+  --bg-2: #edecea;
+  --bg-3: #e3e2df;
+  --fg: #0b0b0b;
+  --fg-2: #52514e;
+  --fg-3: #8a8985;
+  --accent: #2a78d6;
+  --accent-2: #3987e5;
+  --dom-order-flow: #2a78d6;
+  --dom-intraday: #008300;
+  --dom-macro: #d95926;
+  --dom-options: #d55181;
+  --dom-micro: #6250d6;
+  --dom-regime: #c98500;
+  --dom-timing: #e34948;
+  --dom-risk: #52514e;
+  color-scheme: light;
+}
+
+* { margin: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  z-index: 10;
+  background: var(--bg);
+}
+
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* Header */
+.header {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 9;
+  background: var(--bg);
+  border-bottom: 1px solid var(--bg-3);
+  padding: 12px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.header h1 { font-size: 1.15rem; letter-spacing: -0.02em; }
+.header h1 span { color: var(--accent); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+
+/* Regime badge */
+.regime-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--bg-3);
+  color: var(--fg-2);
+}
+.regime-badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* Composite meter */
+.composite-section {
+  padding: 20px 0 16px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: end;
+}
+.composite-number {
+  font-family: var(--font-display);
+  font-size: 3.2rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+.composite-label {
+  font-size: 0.75rem;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+.composite-meta {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.meta-row {
+  font-size: 0.72rem;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+}
+.meta-row .val { color: var(--fg); font-weight: 500; }
+
+/* Posterior bar */
+.posterior-bar {
+  height: 6px;
+  background: var(--bg-3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  position: relative;
+}
+.posterior-bar .fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1), background 0.4s;
+}
+.posterior-bar .midline {
+  position: absolute;
+  left: 50%;
+  top: -1px;
+  width: 1px;
+  height: calc(100% + 2px);
+  background: var(--fg-3);
+  opacity: 0.5;
+}
+
+/* Stats strip */
+.stats-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.stat-tile {
+  background: var(--bg-2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.stat-tile .stat-label {
+  font-size: 0.65rem;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.stat-tile .stat-value {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Engine comparison strip */
+.engines-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.engine-card {
+  background: var(--bg-2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--fg-3);
+}
+.engine-card .engine-name {
+  font-size: 0.65rem;
+  color: var(--fg-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+.engine-card .engine-post {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.engine-card .engine-bar {
+  height: 3px;
+  background: var(--bg-3);
+  border-radius: 2px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+.engine-card .engine-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Domain swim lanes */
+.domains-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.domain-lane {
+  background: var(--bg-2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+.domain-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+.domain-name {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.domain-name .color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.domain-posterior {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.domain-coverage-bar {
+  height: 2px;
+  background: var(--bg-3);
+  border-radius: 1px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.domain-coverage-fill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 0.4s ease;
+}
+.domain-meta {
+  font-size: 0.65rem;
+  color: var(--fg-3);
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+}
+
+/* Node particles */
+.node-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.node-particle {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  transition: background 0.5s, transform 0.3s, opacity 0.4s;
+  cursor: pointer;
+  position: relative;
+}
+.node-particle:hover {
+  transform: scale(1.8);
+  z-index: 5;
+}
+.node-particle.dark-node {
+  opacity: 0.25;
+}
+
+/* Node tooltip */
+.node-tooltip {
+  display: none;
+  position: fixed;
+  z-index: 100;
+  background: var(--bg);
+  border: 1px solid var(--bg-3);
+  border-radius: 8px;
+  padding: 10px 12px;
+  max-width: 300px;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  pointer-events: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.node-tooltip.visible { display: block; }
+.node-tooltip .tt-id { font-family: var(--font-mono); font-weight: 600; color: var(--accent); margin-bottom: 2px; }
+.node-tooltip .tt-desc { color: var(--fg-2); margin-bottom: 4px; }
+.node-tooltip .tt-grid { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; }
+.node-tooltip .tt-label { color: var(--fg-3); }
+.node-tooltip .tt-val { font-family: var(--font-mono); font-weight: 500; }
+
+/* Posterior history sparkline */
+.history-section {
+  background: var(--bg-2);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 20px;
+}
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.history-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.history-canvas {
+  width: 100%;
+  height: 140px;
+  display: block;
+}
+
+/* Attractor field */
+.field-section {
+  background: var(--bg-2);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 20px;
+}
+.field-canvas {
+  width: 100%;
+  height: 100px;
+  display: block;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.ctrl-btn {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--bg-3);
+  background: var(--bg-2);
+  color: var(--fg-2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
+.ctrl-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Veto banner */
+.veto-banner {
+  background: rgba(227, 73, 72, 0.12);
+  border: 1px solid var(--red);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  font-size: 0.78rem;
+  display: none;
+}
+.veto-banner.active { display: flex; align-items: center; gap: 8px; }
+.veto-icon { font-size: 1rem; }
+
+/* Footer */
+.footer {
+  padding: 16px 0 24px;
+  font-size: 0.65rem;
+  color: var(--fg-3);
+  border-top: 1px solid var(--bg-3);
+  text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .composite-number { font-size: 2.4rem; }
+  .composite-section { grid-template-columns: 1fr; }
+  .domains-grid { grid-template-columns: 1fr; }
+  .engines-strip { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+
+<div class="header">
+  <h1>MadTrades <span>Bayesian Field</span></h1>
+  <div class="header-right">
+    <div class="regime-badge" id="regimeBadge"><div class="dot"></div><span id="regimeText">TREND_UP</span></div>
+    <div class="regime-badge" id="gexBadge"><div class="dot"></div><span id="gexText">LONG_GAMMA</span></div>
+  </div>
+</div>
+
+<div class="veto-banner" id="vetoBanner">
+  <span class="veto-icon">&#9888;</span>
+  <span id="vetoText">VETO ACTIVE — position capped at 0.35</span>
+</div>
+
+<div class="composite-section">
+  <div>
+    <div class="composite-number" id="compositeNum">0.5000</div>
+    <div class="composite-label">Composite Posterior</div>
+  </div>
+  <div class="composite-meta">
+    <div class="meta-row">Tier: <span class="val" id="tierVal">paper</span></div>
+    <div class="meta-row">Kelly: <span class="val" id="kellyVal">0.00</span></div>
+    <div class="meta-row">EV: <span class="val" id="evVal">0.00</span></div>
+    <div class="meta-row">Tick: <span class="val" id="tickVal">0</span></div>
+  </div>
+</div>
+
+<div class="posterior-bar">
+  <div class="midline"></div>
+  <div class="fill" id="posteriorFill" style="width:50%"></div>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn active" id="btnPlay" onclick="togglePlay()">&#9654; Running</button>
+  <button class="ctrl-btn" onclick="setRegime('trend_up')">Trend Up</button>
+  <button class="ctrl-btn" onclick="setRegime('chop')">Chop</button>
+  <button class="ctrl-btn" onclick="setRegime('expansion')">Expansion</button>
+  <button class="ctrl-btn" onclick="setRegime('compression')">Compression</button>
+  <button class="ctrl-btn" onclick="toggleGex()">Toggle GEX</button>
+  <button class="ctrl-btn" onclick="injectShock()">Shock</button>
+</div>
+
+<div class="stats-strip" id="statsStrip"></div>
+
+<div class="engines-strip" id="enginesStrip"></div>
+
+<div class="history-section">
+  <div class="history-header">
+    <div class="history-title">Posterior History</div>
+    <div class="mono" style="font-size:0.65rem;color:var(--fg-3)" id="historyRange">Last 60 ticks</div>
+  </div>
+  <canvas class="history-canvas" id="historyCanvas"></canvas>
+</div>
+
+<div class="field-section">
+  <div class="history-header">
+    <div class="history-title">Attractor-Repeller Field</div>
+    <div class="mono" style="font-size:0.65rem;color:var(--fg-3)" id="fieldStrength">0.000</div>
+  </div>
+  <canvas class="field-canvas" id="fieldCanvas"></canvas>
+</div>
+
+<div class="domains-grid" id="domainsGrid"></div>
+
+<div class="footer">MadTrades V6 &middot; 200-Node Continuous Rolling Bayesian Probability Engine &middot; Fluid Visualization</div>
+
+<div class="node-tooltip" id="nodeTooltip">
+  <div class="tt-id" id="ttId"></div>
+  <div class="tt-desc" id="ttDesc"></div>
+  <div class="tt-grid" id="ttGrid"></div>
+</div>
+
+<script>
+// ───────────────────────────────────────────────────────────────────────
+// 200-NODE BAYESIAN ENGINE — JAVASCRIPT FLUID SIMULATION
+// ───────────────────────────────────────────────────────────────────────
+
+const DOMAINS = [
+  { key: 'order_flow', name: 'Order Flow', color: 'var(--dom-order-flow)', weight: 0.25 },
+  { key: 'intraday_stats', name: 'Intraday Stats', color: 'var(--dom-intraday)', weight: 0.15 },
+  { key: 'macro_cross', name: 'Macro / Cross', color: 'var(--dom-macro)', weight: 0.12 },
+  { key: 'options_mechanics', name: 'Options Mechanics', color: 'var(--dom-options)', weight: 0.20 },
+  { key: 'microstructure', name: 'Microstructure', color: 'var(--dom-micro)', weight: 0.08 },
+  { key: 'regime', name: 'Regime', color: 'var(--dom-regime)', weight: 0.10 },
+  { key: 'timing', name: 'Timing', color: 'var(--dom-timing)', weight: 0.05 },
+  { key: 'risk', name: 'Risk', color: 'var(--dom-risk)', weight: 0.05 },
+];
+
+const REGIMES = ['chop','trend_up','trend_down','expansion','compression','unknown'];
+const GEX_MODES = ['long_gamma','short_gamma','neutral'];
+
+const REGIME_MULTS = {
+  chop: { momentum: 0.4, reversion: 1.6, breakout: 0.3 },
+  trend_up: { momentum: 1.5, reversion: 0.5, breakout: 1.2 },
+  trend_down: { momentum: 1.5, reversion: 0.5, breakout: 1.2 },
+  expansion: { momentum: 1.3, reversion: 0.6, breakout: 1.5 },
+  compression: { momentum: 0.5, reversion: 1.4, breakout: 0.4 },
+  unknown: { momentum: 1.0, reversion: 1.0, breakout: 1.0 },
+};
+
+const TRANSITION_MATRIX = {
+  chop:        { chop: 0.55, trend_up: 0.12, trend_down: 0.10, expansion: 0.10, compression: 0.12, unknown: 0.01 },
+  trend_up:    { chop: 0.18, trend_up: 0.50, trend_down: 0.05, expansion: 0.18, compression: 0.08, unknown: 0.01 },
+  trend_down:  { chop: 0.18, trend_up: 0.05, trend_down: 0.50, expansion: 0.18, compression: 0.08, unknown: 0.01 },
+  expansion:   { chop: 0.15, trend_up: 0.22, trend_down: 0.22, expansion: 0.30, compression: 0.10, unknown: 0.01 },
+  compression: { chop: 0.20, trend_up: 0.15, trend_down: 0.15, expansion: 0.30, compression: 0.19, unknown: 0.01 },
+  unknown:     { chop: 0.30, trend_up: 0.15, trend_down: 0.15, expansion: 0.15, compression: 0.15, unknown: 0.10 },
+};
+
+function logit(p) { p = Math.max(1e-6, Math.min(1 - 1e-6, p)); return Math.log(p / (1 - p)); }
+function invLogit(x) { return 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, x)))); }
+function emaUpdate(old, nw, alpha) { return alpha * nw + (1 - alpha) * old; }
+function halfLifeAlpha(hl, dt) { return hl <= 0 || dt <= 0 ? 1 : 1 - Math.exp(-0.693147 * dt / hl); }
+function reliability(n, min_s = 12) { return n / (n + min_s); }
+
+// ── Build 200 nodes ──
+const NODE_SPECS = [];
+function addNodes(domain, prefix, count, specs) {
+  for (let i = 0; i < count; i++) {
+    const s = specs[i] || {};
+    NODE_SPECS.push({
+      id: `${prefix}${String(i + 1).padStart(3, '0')}`,
+      domain,
+      description: s.desc || `${domain} signal ${i+1}`,
+      baseRate: s.base || 0.5,
+      priorUpdate: s.prior || (Math.random() * 0.12 - 0.04),
+      priority: s.pri || Math.ceil(Math.random() * 4 + 1),
+      verdict: s.verd || 'PARTIALLY_TRUE',
+      strategyRole: s.role || 'context',
+      signalType: s.sig || 'momentum',
+    });
+  }
+}
+
+// Order Flow (38 nodes)
+addNodes('order_flow', 'OF', 38, [
+  { desc: 'CVD slope bullish divergence', base: 0.48, pri: 5, role: 'entry', sig: 'momentum', verd: 'TRUE' },
+  { desc: 'VPIN elevated (toxic flow)', base: 0.55, pri: 4, role: 'veto', sig: 'reversion' },
+  { desc: 'OBI sustained positive', base: 0.50, pri: 4, role: 'entry', sig: 'momentum', verd: 'TRUE' },
+  { desc: 'GEX thrust positive', base: 0.45, pri: 5, role: 'context', sig: 'breakout' },
+  { desc: 'Dark pool prints above VWAP', base: 0.52, pri: 3, role: 'context', sig: 'momentum' },
+  { desc: 'Iceberg order detection', base: 0.40, pri: 3, role: 'context' },
+  { desc: 'Liquidity cascade forming', base: 0.35, pri: 4, role: 'veto', sig: 'breakout' },
+  { desc: 'Aggressive buyer/seller ratio', base: 0.50, pri: 4, role: 'entry', sig: 'momentum' },
+  { desc: 'Quote stuffing detected', base: 0.30, pri: 3, role: 'veto' },
+  { desc: 'Sweep-to-fill ratio elevated', base: 0.45, pri: 3, role: 'context' },
+  ...Array.from({length: 28}, (_, i) => ({
+    desc: `Order flow signal ${i+11}`, base: 0.50 + (Math.random()-0.5)*0.08, pri: 3
+  }))
+]);
+addNodes('intraday_stats', 'IS', 25, Array.from({length: 25}, (_, i) => ({
+  desc: ['Chop detector high','ORB breakout confirmed','Gap fill probability','ADR asymmetry bullish',
+    'Volume profile POC hold','Range expansion signal','IB break attempt','VWAP reclaim',
+    'Opening drive momentum','Lunch fade probability','Prior day high/low test',
+    'Engulfing candle at support','Hammer at demand zone','Session TWAP deviation',
+    'ADR % used threshold','HoD/LoD proximity','Candle body/wick ratio','Volume climax',
+    'Tick divergence from price','Session velocity','5-min momentum burst',
+    'Pullback to EMA9','Higher low sequence','Lower high sequence','Fractal breakout'][i],
+  base: 0.50 + (Math.random()-0.5)*0.06, pri: i < 5 ? 4 : 3,
+  role: i < 3 ? 'entry' : 'context', sig: i % 3 === 0 ? 'momentum' : i % 3 === 1 ? 'reversion' : 'breakout'
+})));
+addNodes('macro_cross', 'MC', 21, Array.from({length: 21}, (_, i) => ({
+  desc: ['ES-NQ futures lead','NQ>ES divergence','DXY inverse correlation','HYG credit divergence',
+    'VIX term structure contango','Mag7 rotation signal','10Y yield move','ES basis premium',
+    'NQ-QQQ spot lead','Cross-asset momentum','Sector rotation alert','Breadth divergence',
+    'Put/call skew shift','Correlation breakdown','Safe haven flow','Risk-on/off switch',
+    'FX carry signal','Commodity correlation','Bond-equity correlation','Intermarket momentum',
+    'Global flow signal'][i],
+  base: 0.50 + (Math.random()-0.5)*0.04, pri: i < 4 ? 4 : 3,
+  role: 'context', sig: 'momentum'
+})));
+addNodes('options_mechanics', 'OM', 44, Array.from({length: 44}, (_, i) => ({
+  desc: ['Premium velocity positive','Break-even move achievable','Theta decay acceleration',
+    'IV rank percentile high','Gamma exposure positive','Delta hedge flow','Pin risk proximity',
+    'Skew steepening','Term structure normal','0DTE volume surge','Premium band hold',
+    'Dealer positioning long','Vanna flow bullish','Charm acceleration','Volga impact',
+    'SSX: LAST CALL trigger','SSX: FENCE JUMPER signal','SSX: DEALERS CHOICE align',
+    'SSX: TAPE WHISPER confirm','SSX: GHOST STATE detect','SSX: 50-75 CLUB entry',
+    'Put wall proximity','Call wall proximity','Max pain magnet','OI concentration strike',
+    'Sweep activity bullish','Multi-leg flow detected','Unusual volume ratio',
+    'Vol surface anomaly','Risk reversal shift','Butterfly spread signal',
+    'Calendar spread opportunity','Vertical spread edge','Iron condor zone',
+    'Straddle/strangle pricing','Expected move breach','Realized vs implied gap',
+    'Volatility smile shift','GEX flip level test','DEX directional exposure',
+    'VEX vanna exposure','Premium acceleration positive','Theta cliff approaching',
+    'Gamma scalp opportunity'][i],
+  base: 0.50 + (Math.random()-0.5)*0.06, pri: i < 6 ? 5 : i < 21 ? 4 : 3,
+  role: i < 3 ? 'entry' : i >= 16 && i <= 21 ? 'entry' : 'context',
+  sig: i < 10 ? 'momentum' : 'breakout', verd: i < 6 ? 'TRUE' : 'PARTIALLY_TRUE'
+})));
+addNodes('microstructure', 'MS', 8, Array.from({length: 8}, (_, i) => ({
+  desc: ["Kyle's lambda low","Tick bar acceleration","Spread tightening","Depth imbalance L1",
+    "Quote-to-trade ratio","Trade arrival rate","Price impact estimate","Microstructure momentum"][i],
+  base: 0.50, pri: 3, role: 'context', sig: 'momentum'
+})));
+addNodes('regime', 'RG', 19, Array.from({length: 19}, (_, i) => ({
+  desc: ['IB breakout confirmed','BB squeeze release','Fractal alignment','Cross-TF agreement',
+    'Regime persistence score','Transition probability high','Compression→expansion signal',
+    'Trend exhaustion','Multi-TF momentum align','1m-5m-15m agreement','Daily trend context',
+    'Weekly structure','Monthly range position','ATR expansion regime','Volatility regime shift',
+    'Mean reversion zone','Momentum zone','Breakout zone','Regime confidence score'][i],
+  base: 0.50 + (Math.random()-0.5)*0.04, pri: i < 4 ? 4 : 3,
+  role: i < 4 ? 'entry' : 'context', sig: i < 3 ? 'breakout' : 'momentum'
+})));
+addNodes('timing', 'TM', 11, Array.from({length: 11}, (_, i) => ({
+  desc: ['Power hour momentum','Lunch fade active','OPEX pinning','Theta cliff window',
+    'Opening drive active','Pre-FOMC compression','Post-CPI expansion','Pre-close positioning',
+    'Opening 15-min volatility','Session midpoint','Weekly options expiry'][i],
+  base: 0.50, pri: i < 4 ? 4 : 3, role: 'timing', sig: 'momentum'
+})));
+addNodes('risk', 'RK', 34, Array.from({length: 34}, (_, i) => ({
+  desc: ['Drawdown limit proximity','Correlation convergence','Concentration risk',
+    'Intraday VaR breach','Win rate decay','Consecutive losses','Equity curve break',
+    'Risk budget consumed','Max position size','Portfolio heat','Sector exposure',
+    'Greeks exposure','Vega risk','Gamma risk','Theta exposure','Tail risk indicator',
+    'Liquidity risk','Gap risk','Overnight risk','Event risk',
+    'Model confidence','Data quality score','Signal decay','Strategy correlation',
+    'Regime uncertainty','Market stress index','Systemic risk','Crowding indicator',
+    'Short squeeze risk','Margin utilization','P&L momentum','Risk-reward ratio',
+    'Sharpe ratio rolling','Kelly fraction optimal'][i] || `Risk signal ${i+1}`,
+  base: 0.50 + (Math.random()-0.5)*0.04, pri: i < 3 ? 4 : 3,
+  role: i < 8 ? 'veto' : 'context', sig: 'reversion'
+})));
+
+// ── Node state ──
+class ProbNode {
+  constructor(spec) {
+    Object.assign(this, spec);
+    this.posterior = spec.baseRate;
+    this.lastTs = 0;
+    this.obsCount = 0;
+    this.isLive = false;
+    this.halfLife = 900;
+  }
+  get effectiveWeight() {
+    const rel = reliability(this.obsCount);
+    const pW = this.priority / 5;
+    const vW = { TRUE: 1, PARTIALLY_TRUE: 0.75, UNVERIFIED: 0.5, FALSE: 0.1 }[this.verdict] || 0.5;
+    return rel * pW * vW;
+  }
+  get logitEffect() { return logit(this.posterior) - logit(this.baseRate); }
+  update(observed, regime, gex, ts) {
+    const dt = this.lastTs > 0 ? ts - this.lastTs : 1;
+    const alpha = halfLifeAlpha(this.halfLife, dt);
+    const rMult = (REGIME_MULTS[regime] || {})[this.signalType] || 1;
+    const gMult = gex === 'long_gamma' ? 1.05 : gex === 'short_gamma' ? 0.95 : 1.0;
+    let adj = Math.max(1e-6, Math.min(1 - 1e-6, observed * rMult * gMult));
+    this.posterior = emaUpdate(this.posterior, adj, alpha);
+    this.lastTs = ts;
+    this.obsCount++;
+    this.isLive = true;
+    return this.posterior;
+  }
+  decay(ts) {
+    if (!this.isLive) return this.posterior;
+    const dt = ts - this.lastTs;
+    const alpha = halfLifeAlpha(this.halfLife, dt);
+    this.posterior = emaUpdate(this.posterior, this.baseRate, alpha);
+    return this.posterior;
+  }
+}
+
+// ── Engine state ──
+const nodes = NODE_SPECS.map(s => new ProbNode(s));
+let state = {
+  regime: 'trend_up',
+  gex: 'long_gamma',
+  tick: 0,
+  composite: 0.5,
+  domainPosteriors: {},
+  enginePosteriors: { v1: 0.5, v2: 0.5, v3: 0.5, v4: 0.5 },
+  agreement: 0.75,
+  consensus: 'LEAN_BULL',
+  tier: 'paper',
+  kelly: 0,
+  ev: 0,
+  fieldPotential: 0,
+  vetoActive: false,
+  vetoReasons: [],
+  liveCount: 0,
+  history: [],
+  fieldHistory: [],
+  running: true,
+};
+
+function sampleNextRegime(current) {
+  const probs = TRANSITION_MATRIX[current] || TRANSITION_MATRIX.unknown;
+  let r = Math.random(), cum = 0;
+  for (const reg of REGIMES) { cum += probs[reg] || 0; if (r <= cum) return reg; }
+  return 'unknown';
+}
+
+function runMonteCarlo(current, n = 200) {
+  const counts = {};
+  REGIMES.forEach(r => counts[r] = 0);
+  for (let i = 0; i < n; i++) counts[sampleNextRegime(current)]++;
+  const result = {};
+  REGIMES.forEach(r => result[r] = counts[r] / n);
+  return result;
+}
+
+function computeFieldPotential(liveNodes) {
+  let totalForce = 0, totalWeight = 0;
+  const dirs = { entry: 1, exit: -0.5, veto: -1, sizing: 0, context: 0.3, regime: 0.5, timing: 0.2, routing: 0 };
+  for (const n of liveNodes) {
+    let dir = dirs[n.strategyRole] || 0;
+    if (n.priorUpdate < 0) dir *= -1;
+    if (dir === 0) continue;
+    const w = n.effectiveWeight;
+    totalForce += dir * n.posterior * w;
+    totalWeight += w;
+  }
+  return totalWeight > 0 ? totalForce / totalWeight : 0;
+}
+
+// ── Tick simulation ──
+function simulateTick() {
+  state.tick++;
+  const ts = state.tick * 15;
+  let liveCount = 0;
+
+  // Randomly activate nodes and feed observations
+  for (const node of nodes) {
+    const activateChance = node.domain === 'order_flow' ? 0.65 :
+      node.domain === 'options_mechanics' ? 0.55 :
+      node.domain === 'intraday_stats' ? 0.50 :
+      node.domain === 'risk' ? 0.40 : 0.35;
+
+    if (Math.random() < activateChance || node.isLive) {
+      const noise = (Math.random() - 0.5) * 0.08;
+      const regimeBias = state.regime === 'trend_up' ? 0.04 :
+        state.regime === 'trend_down' ? -0.04 :
+        state.regime === 'expansion' ? 0.02 : -0.01;
+      const observed = Math.max(0.05, Math.min(0.95, node.baseRate + node.priorUpdate + regimeBias + noise));
+      node.update(observed, state.regime, state.gex, ts);
+      liveCount++;
+    } else {
+      node.decay(ts);
+    }
+  }
+  state.liveCount = liveCount;
+
+  // Domain collapse (logit-space weighted mean)
+  const domainWeights = {};
+  DOMAINS.forEach(d => domainWeights[d.key] = d.weight);
+
+  const domPosts = {};
+  for (const dom of DOMAINS) {
+    const domNodes = nodes.filter(n => n.domain === dom.key);
+    const live = domNodes.filter(n => n.isLive);
+    if (live.length === 0) { domPosts[dom.key] = 0.5; continue; }
+    let wEffects = 0, totalW = 0;
+    for (const n of live) {
+      const w = n.effectiveWeight;
+      if (w > 0) { wEffects += w * n.logitEffect; totalW += w; }
+    }
+    domPosts[dom.key] = totalW > 0 ? invLogit(logit(0.5) + wEffects / totalW) : 0.5;
+  }
+  state.domainPosteriors = domPosts;
+
+  // Composite (weighted domain blend)
+  let compositeLogit = logit(0.5);
+  let totalDomW = 0;
+  for (const dom of DOMAINS) {
+    const w = dom.weight;
+    compositeLogit += w * (logit(domPosts[dom.key]) - logit(0.5));
+    totalDomW += w;
+  }
+  const v1Post = invLogit(compositeLogit);
+
+  // MC regime prediction + field
+  const forecast = runMonteCarlo(state.regime, 200);
+  let mcPost = 0, mcW = 0;
+  for (const reg of REGIMES) {
+    if (forecast[reg] < 0.01) continue;
+    const rMult = reg === 'trend_up' ? 1.15 : reg === 'trend_down' ? 0.85 :
+      reg === 'expansion' ? 1.10 : reg === 'compression' ? 0.90 : reg === 'chop' ? 0.85 : 1.0;
+    mcPost += forecast[reg] * v1Post * rMult;
+    mcW += forecast[reg];
+  }
+  mcPost = mcW > 0 ? mcPost / mcW : v1Post;
+
+  const liveNodes = nodes.filter(n => n.isLive);
+  state.fieldPotential = computeFieldPotential(liveNodes);
+  const fieldSignal = invLogit(state.fieldPotential * 2);
+
+  const v2Post = 0.40 * v1Post + 0.35 * mcPost + 0.25 * fieldSignal;
+  const v3Post = 0.60 * invLogit(logit(0.5) + state.fieldPotential * 0.8) + 0.40 * v1Post;
+
+  // Ensemble
+  const posts = [v1Post, v2Post, v3Post];
+  const mean = posts.reduce((a,b)=>a+b,0)/3;
+  const variance = posts.reduce((a,p)=>a+(p-mean)**2,0)/3;
+  const agreement = 1 - Math.min(Math.sqrt(variance)/0.25, 1);
+
+  const distances = posts.map(p => Math.abs(p - mean));
+  const invD = distances.map(d => 1/Math.max(d, 0.01));
+  const totInv = invD.reduce((a,b)=>a+b,0);
+  const adaptW = invD.map(w => w/totInv);
+
+  const staticW = [0.35, 0.35, 0.30];
+  const blended = staticW.map((s,i) => (0.5*s + 0.5*adaptW[i]));
+  const bTot = blended.reduce((a,b)=>a+b,0);
+  const finalW = blended.map(w => w/bTot);
+
+  let composite = finalW[0]*v1Post + finalW[1]*v2Post + finalW[2]*v3Post;
+  if (agreement < 0.7) {
+    const disc = 0.5 + 0.5 * agreement;
+    composite = 0.5 + (composite - 0.5) * disc;
+  }
+
+  // Vetoes
+  let vetoActive = false;
+  const vetoReasons = [];
+  const vpinNodes = nodes.filter(n => n.id === 'OF002' && n.isLive);
+  if (vpinNodes.length > 0 && vpinNodes[0].posterior > 0.72) {
+    vetoActive = true; vetoReasons.push('VPIN > 0.72 (toxic flow)');
+  }
+  const riskNodes = nodes.filter(n => n.domain === 'risk' && n.isLive && n.strategyRole === 'veto');
+  for (const rn of riskNodes) {
+    if (rn.posterior > 0.75) { vetoActive = true; vetoReasons.push(`${rn.id}: ${rn.description}`); break; }
+  }
+  if (vetoActive) composite = Math.min(composite, 0.35);
+
+  composite = Math.max(0.01, Math.min(0.99, composite));
+
+  // Tier
+  const uncertainty = Math.abs(composite - 0.5) * 2;
+  const tiers = [[0.12,'full'],[0.22,'half'],[0.35,'quarter'],[1,'paper']];
+  let tier = 'paper';
+  for (const [th, t] of tiers) { if (1-uncertainty < th) { tier = t; break; } }
+  if (agreement < 0.5) tier = 'paper';
+
+  // Kelly/EV
+  const avgWin = 0.055, avgLoss = 0.028, cost = 0.002;
+  const ev = composite * avgWin - (1-composite) * avgLoss - cost;
+  const kf = Math.max(0, Math.min(1, composite - (1-composite) / (avgWin/avgLoss)));
+
+  state.composite = composite;
+  state.enginePosteriors = { v1: v1Post, v2: v2Post, v3: v3Post, v4: composite };
+  state.agreement = agreement;
+  state.tier = tier;
+  state.kelly = kf;
+  state.ev = ev;
+  state.vetoActive = vetoActive;
+  state.vetoReasons = vetoReasons;
+
+  const bc = posts.filter(p => p > 0.55).length;
+  const brc = posts.filter(p => p < 0.45).length;
+  state.consensus = bc===3?'STRONG_BULL':brc===3?'STRONG_BEAR':bc>=2?'LEAN_BULL':brc>=2?'LEAN_BEAR':'MIXED';
+
+  state.history.push({ tick: state.tick, composite, v1: v1Post, v2: v2Post, v3: v3Post, agreement });
+  if (state.history.length > 120) state.history = state.history.slice(-60);
+  state.fieldHistory.push({ tick: state.tick, field: state.fieldPotential });
+  if (state.fieldHistory.length > 120) state.fieldHistory = state.fieldHistory.slice(-60);
+}
+
+// ── UI rendering ──
+function posteriorColor(p) {
+  if (p > 0.65) return 'var(--green)';
+  if (p > 0.55) return 'var(--accent)';
+  if (p < 0.35) return 'var(--red)';
+  if (p < 0.45) return 'var(--orange)';
+  return 'var(--fg-3)';
+}
+
+function renderComposite() {
+  const num = document.getElementById('compositeNum');
+  num.textContent = state.composite.toFixed(4);
+  num.style.color = posteriorColor(state.composite);
+  document.getElementById('posteriorFill').style.width = (state.composite*100)+'%';
+  document.getElementById('posteriorFill').style.background = posteriorColor(state.composite);
+  document.getElementById('tierVal').textContent = state.tier;
+  document.getElementById('kellyVal').textContent = state.kelly.toFixed(3);
+  document.getElementById('evVal').textContent = state.ev.toFixed(4);
+  document.getElementById('tickVal').textContent = state.tick;
+  document.getElementById('regimeText').textContent = state.regime.toUpperCase().replace(/_/g, ' ');
+  document.getElementById('gexText').textContent = state.gex.toUpperCase().replace(/_/g, ' ');
+
+  const vb = document.getElementById('vetoBanner');
+  if (state.vetoActive) {
+    vb.classList.add('active');
+    document.getElementById('vetoText').textContent = 'VETO ACTIVE — ' + state.vetoReasons.join('; ');
+  } else {
+    vb.classList.remove('active');
+  }
+}
+
+function renderStats() {
+  const stats = [
+    { label: 'Live Nodes', value: state.liveCount + ' / 200' },
+    { label: 'Agreement', value: state.agreement.toFixed(3) },
+    { label: 'Consensus', value: state.consensus },
+    { label: 'Field', value: state.fieldPotential.toFixed(4) },
+  ];
+  const el = document.getElementById('statsStrip');
+  el.innerHTML = stats.map(s => `
+    <div class="stat-tile">
+      <div class="stat-label">${s.label}</div>
+      <div class="stat-value">${s.value}</div>
+    </div>
+  `).join('');
+}
+
+function renderEngines() {
+  const engines = [
+    { name: 'V1 Deterministic', key: 'v1', color: 'var(--accent)' },
+    { name: 'V2 Monte Carlo', key: 'v2', color: 'var(--green)' },
+    { name: 'V3 Factorized', key: 'v3', color: 'var(--orange)' },
+    { name: 'V4 Ensemble', key: 'v4', color: 'var(--magenta)' },
+  ];
+  const el = document.getElementById('enginesStrip');
+  el.innerHTML = engines.map(e => {
+    const p = state.enginePosteriors[e.key];
+    return `<div class="engine-card" style="border-left-color:${e.color}">
+      <div class="engine-name">${e.name}</div>
+      <div class="engine-post" style="color:${posteriorColor(p)}">${p.toFixed(4)}</div>
+      <div class="engine-bar"><div class="engine-bar-fill" style="width:${p*100}%;background:${e.color}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDomains() {
+  const el = document.getElementById('domainsGrid');
+  el.innerHTML = DOMAINS.map(dom => {
+    const domNodes = nodes.filter(n => n.domain === dom.key);
+    const live = domNodes.filter(n => n.isLive);
+    const post = state.domainPosteriors[dom.key] || 0.5;
+    const coverage = domNodes.length > 0 ? live.length / domNodes.length : 0;
+
+    const nodeParticles = domNodes.map(n => {
+      const p = n.posterior;
+      let bg;
+      if (!n.isLive) bg = 'var(--bg-3)';
+      else if (p > 0.6) bg = 'var(--green)';
+      else if (p > 0.52) bg = 'var(--accent)';
+      else if (p < 0.4) bg = 'var(--red)';
+      else if (p < 0.48) bg = 'var(--orange)';
+      else bg = 'var(--fg-3)';
+      return `<div class="node-particle ${n.isLive?'':'dark-node'}" style="background:${bg}"
+        data-node-id="${n.id}" onmouseenter="showTooltip(event,'${n.id}')" onmouseleave="hideTooltip()"
+        ontouchstart="showTooltip(event,'${n.id}')"></div>`;
+    }).join('');
+
+    return `<div class="domain-lane">
+      <div class="domain-header">
+        <div class="domain-name"><div class="color-dot" style="background:${dom.color}"></div>${dom.name}</div>
+        <div class="domain-posterior" style="color:${posteriorColor(post)}">${post.toFixed(3)}</div>
+      </div>
+      <div class="domain-coverage-bar"><div class="domain-coverage-fill" style="width:${coverage*100}%;background:${dom.color}"></div></div>
+      <div class="domain-meta">${live.length}/${domNodes.length} live &middot; w=${dom.weight}</div>
+      <div class="node-grid">${nodeParticles}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderHistoryChart() {
+  const canvas = document.getElementById('historyCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = 1;
+  canvas.width = canvas.clientWidth * dpr;
+  canvas.height = canvas.clientHeight * dpr;
+  ctx.scale(dpr, dpr);
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+
+  const data = state.history;
+  if (data.length < 2) return;
+
+  const pad = { top: 8, bottom: 20, left: 40, right: 8 };
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+
+  // Grid
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-3').trim() || '#222';
+  ctx.lineWidth = 0.5;
+  [0.3, 0.4, 0.5, 0.6, 0.7].forEach(v => {
+    const y = pad.top + cH * (1 - (v - 0.2) / 0.6);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg-3').trim() || '#555';
+    ctx.font = '10px JetBrains Mono';
+    ctx.textAlign = 'right';
+    ctx.fillText(v.toFixed(1), pad.left - 4, y + 3);
+  });
+
+  // 0.5 line
+  const midY = pad.top + cH * (1 - (0.5 - 0.2) / 0.6);
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg-3').trim() || '#555';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(pad.left, midY); ctx.lineTo(W - pad.right, midY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  function drawLine(key, color, width = 1.5) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    data.forEach((d, i) => {
+      const x = pad.left + (i / (data.length - 1)) * cW;
+      const y = pad.top + cH * (1 - (d[key] - 0.2) / 0.6);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+
+  drawLine('v1', '#3987e5', 1);
+  drawLine('v2', '#1baf7a', 1);
+  drawLine('v3', '#eb6834', 1);
+  drawLine('composite', '#e87ba4', 2.5);
+
+  // Endpoint
+  const last = data[data.length - 1];
+  const endX = W - pad.right;
+  const endY = pad.top + cH * (1 - (last.composite - 0.2) / 0.6);
+  ctx.beginPath();
+  ctx.arc(endX, endY, 4, 0, Math.PI * 2);
+  ctx.fillStyle = '#e87ba4';
+  ctx.fill();
+}
+
+function renderFieldChart() {
+  const canvas = document.getElementById('fieldCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = 1;
+  canvas.width = canvas.clientWidth * dpr;
+  canvas.height = canvas.clientHeight * dpr;
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+
+  const data = state.fieldHistory;
+  if (data.length < 2) return;
+
+  const pad = { top: 4, bottom: 4, left: 4, right: 4 };
+  const cW = W - pad.left - pad.right;
+  const cH = H - pad.top - pad.bottom;
+  const midY = pad.top + cH / 2;
+
+  // Zero line
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--fg-3').trim() || '#555';
+  ctx.lineWidth = 0.5;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(pad.left, midY); ctx.lineTo(W-pad.right, midY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Fill area
+  const maxField = 0.5;
+  ctx.beginPath();
+  data.forEach((d, i) => {
+    const x = pad.left + (i / (data.length - 1)) * cW;
+    const y = midY - (d.field / maxField) * (cH / 2);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  const lastX = pad.left + cW;
+  ctx.lineTo(lastX, midY);
+  ctx.lineTo(pad.left, midY);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + cH);
+  grad.addColorStop(0, 'rgba(27,175,122,0.3)');
+  grad.addColorStop(0.5, 'rgba(100,100,100,0.05)');
+  grad.addColorStop(1, 'rgba(227,73,72,0.3)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.strokeStyle = state.fieldPotential > 0 ? '#1baf7a' : '#e34948';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  data.forEach((d, i) => {
+    const x = pad.left + (i / (data.length - 1)) * cW;
+    const y = midY - (d.field / maxField) * (cH / 2);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  document.getElementById('fieldStrength').textContent = state.fieldPotential.toFixed(4);
+}
+
+// Tooltip
+function showTooltip(e, nodeId) {
+  const node = nodes.find(n => n.id === nodeId);
+  if (!node) return;
+  const tt = document.getElementById('nodeTooltip');
+  document.getElementById('ttId').textContent = node.id;
+  document.getElementById('ttDesc').textContent = node.description;
+  document.getElementById('ttGrid').innerHTML = [
+    ['Posterior', node.posterior.toFixed(4)],
+    ['Base Rate', node.baseRate.toFixed(3)],
+    ['Weight', node.effectiveWeight.toFixed(3)],
+    ['Logit Fx', node.logitEffect.toFixed(3)],
+    ['Obs Count', node.obsCount],
+    ['Role', node.strategyRole],
+    ['Signal', node.signalType],
+    ['Verdict', node.verdict],
+    ['Priority', node.priority + '/5'],
+    ['Status', node.isLive ? 'LIVE' : 'DARK'],
+  ].map(([l,v]) => `<div class="tt-label">${l}</div><div class="tt-val">${v}</div>`).join('');
+  tt.classList.add('visible');
+  const rect = (e.touches ? e.touches[0] : e);
+  const x = Math.min(rect.clientX + 12, window.innerWidth - 320);
+  const y = Math.min(rect.clientY - 10, window.innerHeight - 260);
+  tt.style.left = x + 'px';
+  tt.style.top = y + 'px';
+}
+function hideTooltip() { document.getElementById('nodeTooltip').classList.remove('visible'); }
+
+// Controls
+function togglePlay() {
+  state.running = !state.running;
+  const btn = document.getElementById('btnPlay');
+  btn.textContent = state.running ? '▶ Running' : '⏸ Paused';
+  btn.classList.toggle('active', state.running);
+}
+function setRegime(r) { state.regime = r; }
+function toggleGex() {
+  const idx = GEX_MODES.indexOf(state.gex);
+  state.gex = GEX_MODES[(idx + 1) % GEX_MODES.length];
+}
+function injectShock() {
+  for (const n of nodes) {
+    if (n.isLive && Math.random() < 0.3) {
+      n.posterior = Math.max(0.05, Math.min(0.95, n.posterior + (Math.random()-0.5)*0.2));
+    }
+  }
+}
+
+// ── Main loop ──
+function render() {
+  renderComposite();
+  renderStats();
+  renderEngines();
+  renderDomains();
+  renderHistoryChart();
+  renderFieldChart();
+}
+
+let lastTick = 0;
+function loop(ts) {
+  if (state.running && ts - lastTick > 800) {
+    simulateTick();
+    render();
+    lastTick = ts;
+  }
+  requestAnimationFrame(loop);
+}
+
+// Init
+simulateTick();
+render();
+requestAnimationFrame(loop);
+</script>
