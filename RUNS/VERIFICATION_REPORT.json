@@ -1,0 +1,459 @@
+{
+  "timestamp": "2026-11-13T13:55:51.553831+00:00",
+  "summary": {
+    "total_verified": 280,
+    "clean": 97,
+    "needs_work": 87,
+    "review": 96,
+    "clean_pct": "34.6%"
+  },
+  "by_tier": {
+    "RESEARCH": {
+      "total": 120,
+      "clean": 87,
+      "needs_work": 10,
+      "review": 23
+    },
+    "EXTERNAL": {
+      "total": 69,
+      "clean": 10,
+      "needs_work": 33,
+      "review": 26
+    },
+    "LOCKED": {
+      "total": 26,
+      "clean": 0,
+      "needs_work": 17,
+      "review": 9
+    },
+    "PROVISIONAL": {
+      "total": 65,
+      "clean": 0,
+      "needs_work": 27,
+      "review": 38
+    }
+  },
+  "most_common_failures": {
+    "EI_SAMPLE_N": {
+      "name": "Sample size sufficient",
+      "count": 66
+    },
+    "MADX_EDGEFUL": {
+      "name": "Edgeful base-rate caveat",
+      "count": 20
+    },
+    "BOG_REALDATA": {
+      "name": "Real-data backtest (ThetaData 1s, $0.01 spread)",
+      "count": 17
+    },
+    "TIER_CONSISTENCY": {
+      "name": "Tier-evidence consistency",
+      "count": 17
+    },
+    "MADX_FEES": {
+      "name": "Fee compliance ($0.10/side, no-fee first)",
+      "count": 7
+    },
+    "BOG_FILLS": {
+      "name": "Fill convention (BID, no artificial fees)",
+      "count": 4
+    }
+  },
+  "worst_20": [
+    {
+      "id": "V19_RSI_KILL_ZONE_40_60",
+      "name": "RSI 40-60 kill zone filter",
+      "tier": "EXTERNAL",
+      "failed": 3,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "BOG_FILLS",
+          "detail": "Uses $0.65 commission (Josh's real fee is $0.10/side)",
+          "fix": "Recalculate with BID fills, $0.10/side (or no-fee first)"
+        },
+        {
+          "check": "MADX_FEES",
+          "detail": "References $0.65 commission \u2014 BANNED per Josh's rules",
+          "fix": "Rerun with no fees first, then $0.10/side labeled separately"
+        }
+      ]
+    },
+    {
+      "id": "VIX_HALT_ABOVE_40",
+      "name": "VIX > 40 = HALT all trading",
+      "tier": "LOCKED",
+      "failed": 3,
+      "warned": 4,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "BOG_REALDATA",
+          "detail": "LOCKED tier but not verified on real data",
+          "fix": "Run DeepTest on ThetaData 1s with $0.01 spread, BID fills"
+        },
+        {
+          "check": "TIER_CONSISTENCY",
+          "detail": "LOCKED but: no verification_pf, sample_size=0",
+          "fix": "Either downgrade tier or provide missing verification data"
+        }
+      ]
+    },
+    {
+      "id": "VIX_SIZE_HALVE_25",
+      "name": "VIX > 25 = halve position size",
+      "tier": "LOCKED",
+      "failed": 3,
+      "warned": 4,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "BOG_REALDATA",
+          "detail": "LOCKED tier but not verified on real data",
+          "fix": "Run DeepTest on ThetaData 1s with $0.01 spread, BID fills"
+        },
+        {
+          "check": "TIER_CONSISTENCY",
+          "detail": "LOCKED but: no verification_pf, sample_size=0",
+          "fix": "Either downgrade tier or provide missing verification data"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_ADR_EXTENSION",
+      "name": "ADR extension behavior",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_ADR_STREAK",
+      "name": "ADR by streak count",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_ADR_USED",
+      "name": "ADR % consumed",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_ADR_WEEKDAY",
+      "name": "ADR by weekday",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_CPI_REACTION",
+      "name": "CPI day reaction profile",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_ENGULFING",
+      "name": "Engulfing candle continuation",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_FIB_LEVELS",
+      "name": "Fibonacci level reaction",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_FOMC_REACTION",
+      "name": "FOMC day reaction profile",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_FVG",
+      "name": "Fair Value Gap fill rate",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_GAP_BY_SIZE",
+      "name": "Gap fill by size bucket",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_GAP_BY_WEEKDAY",
+      "name": "Gap fill by day of week",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_GAP_FILL",
+      "name": "Gap fill base rate",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_GAP_FILL_TIME",
+      "name": "Time to gap fill",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_IB_60",
+      "name": "60-min IB status",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_ORB_15",
+      "name": "15-min ORB status",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_ORB_5",
+      "name": "5-min ORB status",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    },
+    {
+      "id": "EDGE_PREV_DAY_RANGE",
+      "name": "Previous day range broken",
+      "tier": "EXTERNAL",
+      "failed": 2,
+      "warned": 0,
+      "failures": [
+        {
+          "check": "EI_SAMPLE_N",
+          "detail": "sample_size=0 \u2014 no observations backing this prior",
+          "fix": "Provide sample size from source data, or pull from API"
+        },
+        {
+          "check": "MADX_EDGEFUL",
+          "detail": "Edgeful prior with sample_size=0 \u2014 placeholder, no API pull",
+          "fix": "Pull from Edgeful API: GET /report_calculation/<slug>/stock/QQQ"
+        }
+      ]
+    }
+  ]
+}

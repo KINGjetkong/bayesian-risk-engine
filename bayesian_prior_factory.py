@@ -95,6 +95,15 @@ class BayesianPrior:
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
 
+    provenance_tag: str = ""
+    causality_axis: str = ""
+    execution_axis: str = ""
+    validation_axis: str = ""
+    fill_source_class: str = ""
+    mustache_verdict: str = ""
+    dsr: Optional[float] = None
+    f_id: str = ""
+
     def to_logit_effect(self) -> float:
         """Convert probability to logit-space effect for Bayesian composition."""
         import math
