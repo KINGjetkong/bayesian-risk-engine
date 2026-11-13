@@ -1,0 +1,835 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Engine Architecture</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Dark-first instrument panel — 6-engine Bayesian architecture */
+:root {
+  color-scheme: dark;
+  --bg: #0d0f12;
+  --bg-card: #161a20;
+  --bg-card-alt: #1c2028;
+  --bg-nav: rgba(13,15,18,0.92);
+  --border: #2a2e38;
+  --border-accent: #3a4050;
+  --text: #e8eaf0;
+  --text-secondary: #9ca3b4;
+  --text-muted: #6b7280;
+  --accent: #60a5fa;
+  --accent-dim: #2563eb;
+  --green: #34d399;
+  --green-dim: #065f46;
+  --orange: #fb923c;
+  --orange-dim: #9a3412;
+  --red: #f87171;
+  --red-dim: #991b1b;
+  --purple: #a78bfa;
+  --purple-dim: #5b21b6;
+  --cyan: #22d3ee;
+  --yellow: #fbbf24;
+  --mono: 'JetBrains Mono', monospace;
+  --display: 'Space Grotesk', sans-serif;
+  --body: 'Inter', sans-serif;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f4f5f7;
+    --bg-card: #ffffff;
+    --bg-card-alt: #f9fafb;
+    --bg-nav: rgba(244,245,247,0.92);
+    --border: #d1d5db;
+    --border-accent: #b0b8c8;
+    --text: #111827;
+    --text-secondary: #4b5563;
+    --text-muted: #9ca3af;
+    --accent: #2563eb;
+    --accent-dim: #93c5fd;
+    --green: #059669;
+    --green-dim: #d1fae5;
+    --orange: #ea580c;
+    --orange-dim: #ffedd5;
+    --red: #dc2626;
+    --red-dim: #fee2e2;
+    --purple: #7c3aed;
+    --purple-dim: #ede9fe;
+    --cyan: #0891b2;
+    --yellow: #d97706;
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f5f7;
+  --bg-card: #ffffff;
+  --bg-card-alt: #f9fafb;
+  --bg-nav: rgba(244,245,247,0.92);
+  --border: #d1d5db;
+  --border-accent: #b0b8c8;
+  --text: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --accent: #2563eb;
+  --accent-dim: #93c5fd;
+  --green: #059669;
+  --green-dim: #d1fae5;
+  --orange: #ea580c;
+  --orange-dim: #ffedd5;
+  --red: #dc2626;
+  --red-dim: #fee2e2;
+  --purple: #7c3aed;
+  --purple-dim: #ede9fe;
+  --cyan: #0891b2;
+  --yellow: #d97706;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.7;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 3rem;
+}
+
+/* Sticky nav */
+nav {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 100;
+  background: var(--bg-nav);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+  margin-bottom: 2rem;
+}
+nav .nav-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+nav .nav-inner::-webkit-scrollbar { display: none; }
+nav a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-family: var(--display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+nav a:hover { color: var(--accent); background: var(--bg-card); }
+
+.container { max-width: 960px; margin: 0 auto; }
+
+/* Hero */
+.hero {
+  text-align: center;
+  padding: 3rem 0 2rem;
+}
+.hero h1 {
+  font-family: var(--display);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+.hero .sub {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.hero .badges {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 1.2rem;
+  flex-wrap: wrap;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+}
+.badge .dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Sections */
+section {
+  margin-bottom: 3rem;
+  scroll-margin-top: 60px;
+}
+h2 {
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+h3 {
+  font-family: var(--display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 1.5rem 0 0.5rem;
+}
+h3 .tag {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+p { margin-bottom: 0.8rem; color: var(--text-secondary); }
+strong { color: var(--text); font-weight: 600; }
+
+/* Cards */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 1rem;
+}
+.card.accent-border { border-left: 3px solid var(--accent); }
+
+/* Code / formula */
+code, .formula {
+  font-family: var(--mono);
+  font-size: 13px;
+}
+code {
+  background: var(--bg-card-alt);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+.formula-block {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  margin: 0.8rem 0;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.9;
+  overflow-x: auto;
+  color: var(--text);
+}
+.formula-block .comment { color: var(--text-muted); }
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin: 1rem 0;
+}
+th {
+  text-align: left;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--border);
+}
+td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+td:first-child { color: var(--text); font-weight: 500; }
+tr:last-child td { border-bottom: none; }
+
+.weight-bar {
+  display: inline-block;
+  height: 8px;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+/* Guarantee cards */
+.guarantee {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.guarantee:last-child { border-bottom: none; }
+.guarantee .icon {
+  flex-shrink: 0;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Pipeline SVG */
+.pipeline-wrap {
+  overflow-x: auto;
+  padding: 1rem 0;
+}
+.pipeline-wrap svg text {
+  font-family: var(--display);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .hero h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  .formula-block { font-size: 12px; padding: 0.8rem; }
+  table { font-size: 12px; }
+  th, td { padding: 6px 8px; }
+}
+</style>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#overview">Overview</a>
+    <a href="#math">Mathematics</a>
+    <a href="#solid">Why It's Solid</a>
+    <a href="#nodes">Node Architecture</a>
+    <a href="#routing">Confidence Routing</a>
+    <a href="#failure">Failure Modes</a>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Bayesian Probability Engine</h1>
+  <p class="sub">6-engine continuous rolling probability field for 0DTE options. 200 nodes, 8 domains, 5 mathematical collapse strategies, 1 production signal.</p>
+  <div class="badges">
+    <span class="badge"><span class="dot" style="background:var(--green)"></span>200 Nodes</span>
+    <span class="badge"><span class="dot" style="background:var(--accent)"></span>6 Engines</span>
+    <span class="badge"><span class="dot" style="background:var(--orange)"></span>8 Domains</span>
+    <span class="badge"><span class="dot" style="background:var(--purple)"></span>15-min Rolling</span>
+  </div>
+</div>
+
+<!-- 1. SYSTEM OVERVIEW -->
+<section id="overview">
+  <h2>1. System Overview</h2>
+  <p>The engine ingests ~70 market context fields every tick and routes them through six mathematical collapse strategies. Each strategy computes a posterior probability independently. The production V6 meta-ensemble stacks all five into a single composite signal that feeds the state machine.</p>
+
+  <div class="pipeline-wrap">
+    <svg viewBox="0 0 920 340" width="920" height="340" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto;">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+          <polygon points="0 0, 10 3.5, 0 7" fill="var(--text-muted)"/>
+        </marker>
+      </defs>
+      <!-- Data feeds -->
+      <rect x="10" y="140" width="100" height="50" rx="8" fill="var(--bg-card)" stroke="var(--border)" stroke-width="1.5"/>
+      <text x="60" y="160" text-anchor="middle" fill="var(--text-muted)" font-size="10" font-weight="500">70+ FIELDS</text>
+      <text x="60" y="176" text-anchor="middle" fill="var(--text)" font-size="12" font-weight="600">Data Feeds</text>
+
+      <!-- V1 -->
+      <rect x="150" y="30" width="110" height="56" rx="8" fill="var(--bg-card)" stroke="var(--accent)" stroke-width="1.5"/>
+      <text x="205" y="52" text-anchor="middle" fill="var(--accent)" font-size="11" font-weight="600">V1</text>
+      <text x="205" y="68" text-anchor="middle" fill="var(--text-secondary)" font-size="10">Deterministic</text>
+      <text x="205" y="80" text-anchor="middle" fill="var(--text-muted)" font-size="9">Logit Collapse</text>
+
+      <!-- V2 -->
+      <rect x="150" y="100" width="110" height="56" rx="8" fill="var(--bg-card)" stroke="var(--green)" stroke-width="1.5"/>
+      <text x="205" y="122" text-anchor="middle" fill="var(--green)" font-size="11" font-weight="600">V2</text>
+      <text x="205" y="138" text-anchor="middle" fill="var(--text-secondary)" font-size="10">Monte Carlo</text>
+      <text x="205" y="150" text-anchor="middle" fill="var(--text-muted)" font-size="9">Regime Prediction</text>
+
+      <!-- V3 -->
+      <rect x="150" y="170" width="110" height="56" rx="8" fill="var(--bg-card)" stroke="var(--orange)" stroke-width="1.5"/>
+      <text x="205" y="192" text-anchor="middle" fill="var(--orange)" font-size="11" font-weight="600">V3</text>
+      <text x="205" y="208" text-anchor="middle" fill="var(--text-secondary)" font-size="10">Factorized</text>
+      <text x="205" y="220" text-anchor="middle" fill="var(--text-muted)" font-size="9">James-Stein</text>
+
+      <!-- Arrows: Data → V1,V2,V3 -->
+      <line x1="110" y1="165" x2="148" y2="58" stroke="var(--text-muted)" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="110" y1="165" x2="148" y2="128" stroke="var(--text-muted)" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="110" y1="165" x2="148" y2="198" stroke="var(--text-muted)" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- V4 bracket -->
+      <rect x="310" y="80" width="110" height="60" rx="8" fill="var(--bg-card)" stroke="var(--purple)" stroke-width="2"/>
+      <text x="365" y="104" text-anchor="middle" fill="var(--purple)" font-size="11" font-weight="600">V4</text>
+      <text x="365" y="120" text-anchor="middle" fill="var(--text-secondary)" font-size="10">Ensemble</text>
+      <text x="365" y="132" text-anchor="middle" fill="var(--text-muted)" font-size="9">V1 + V2 + V3</text>
+      <!-- Arrows: V1,V2,V3 → V4 -->
+      <line x1="260" y1="58" x2="308" y2="100" stroke="var(--text-muted)" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="260" y1="128" x2="308" y2="110" stroke="var(--text-muted)" stroke-width="1" marker-end="url(#arr)"/>
+      <line x1="260" y1="198" x2="308" y2="120" stroke="var(--text-muted)" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- V5 -->
+      <rect x="310" y="190" width="110" height="56" rx="8" fill="var(--bg-card)" stroke="var(--cyan)" stroke-width="1.5"/>
+      <text x="365" y="212" text-anchor="middle" fill="var(--cyan)" font-size="11" font-weight="600">V5</text>
+      <text x="365" y="228" text-anchor="middle" fill="var(--text-secondary)" font-size="10">Entropy</text>
+      <text x="365" y="240" text-anchor="middle" fill="var(--text-muted)" font-size="9">Info-Theoretic</text>
+      <!-- Arrow: Data → V5 -->
+      <line x1="110" y1="175" x2="148" y2="260" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="4,3" opacity="0"/>
+      <path d="M 110 175 Q 130 280 308 218" fill="none" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr)"/>
+
+      <!-- V6 mega box -->
+      <rect x="480" y="100" width="130" height="80" rx="10" fill="var(--bg-card)" stroke="var(--yellow)" stroke-width="2.5"/>
+      <text x="545" y="128" text-anchor="middle" fill="var(--yellow)" font-size="13" font-weight="700">V6 META</text>
+      <text x="545" y="146" text-anchor="middle" fill="var(--text-secondary)" font-size="10">All 5 Engines</text>
+      <text x="545" y="162" text-anchor="middle" fill="var(--text-muted)" font-size="9">Production Signal</text>
+
+      <!-- Arrows into V6 -->
+      <line x1="260" y1="58" x2="478" y2="125" stroke="var(--accent)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr)" opacity="0.5"/>
+      <line x1="260" y1="128" x2="478" y2="135" stroke="var(--green)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr)" opacity="0.5"/>
+      <line x1="260" y1="198" x2="478" y2="150" stroke="var(--orange)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arr)" opacity="0.5"/>
+      <line x1="420" y1="110" x2="478" y2="130" stroke="var(--purple)" stroke-width="1.5" marker-end="url(#arr)"/>
+      <line x1="420" y1="218" x2="478" y2="160" stroke="var(--cyan)" stroke-width="1.5" marker-end="url(#arr)"/>
+
+      <!-- State machine -->
+      <rect x="670" y="115" width="120" height="50" rx="8" fill="var(--bg-card)" stroke="var(--red)" stroke-width="1.5"/>
+      <text x="730" y="138" text-anchor="middle" fill="var(--red)" font-size="10" font-weight="500">STATE MACHINE</text>
+      <text x="730" y="153" text-anchor="middle" fill="var(--text-secondary)" font-size="10">MadTrades V6</text>
+      <line x1="610" y1="140" x2="668" y2="140" stroke="var(--yellow)" stroke-width="2" marker-end="url(#arr)"/>
+
+      <!-- Output -->
+      <rect x="840" y="115" width="70" height="50" rx="8" fill="var(--bg-card)" stroke="var(--green)" stroke-width="1.5"/>
+      <text x="875" y="136" text-anchor="middle" fill="var(--green)" font-size="10" font-weight="500">EXECUTE</text>
+      <text x="875" y="151" text-anchor="middle" fill="var(--text-secondary)" font-size="9">0DTE</text>
+      <line x1="790" y1="140" x2="838" y2="140" stroke="var(--text-muted)" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- Labels -->
+      <text x="545" y="290" text-anchor="middle" fill="var(--text-muted)" font-size="10" font-style="italic">V4 stacks V1-V3. V6 stacks all five. Each engine fails differently — the meta-ensemble is robust across all regimes.</text>
+    </svg>
+  </div>
+</section>
+
+<!-- 2. THE MATHEMATICS -->
+<section id="math">
+  <h2>2. The Mathematics</h2>
+
+  <h3>V1 — Deterministic Logit-Space Collapse <span class="tag" style="background:var(--accent-dim);color:var(--accent)">BASE</span></h3>
+  <p>The foundational engine. 200 ProbNodes organized into 8 domain workers, each maintaining a continuous posterior via EMA smoothing with a 15-minute half-life. Node posteriors are combined in <strong>logit space</strong> — the only mathematically correct way to combine independent probability estimates.</p>
+  <div class="formula-block">
+logit(p) = ln(p / (1 − p))                          <span class="comment">// map [0,1] → ℝ</span>
+inv_logit(x) = 1 / (1 + e⁻ˣ)                        <span class="comment">// map ℝ → [0,1]</span>
+
+logit_effect_i = logit(posterior_i) − logit(base_rate_i)
+domain_score   = inv_logit(Σᵢ wᵢ · logit_effect_i)  <span class="comment">// per domain</span>
+composite      = Σ_d  importance_d · domain_score_d   <span class="comment">// weighted across domains</span>
+
+<span class="comment">// EMA continuous update:</span>
+α = 1 − exp(−Δt · ln(2) / half_life)                 <span class="comment">// half_life = 900s (15 min)</span>
+posterior_new = α · observed + (1 − α) · posterior_old
+
+<span class="comment">// Regime multipliers scale each node's effect:</span>
+effective_logit = logit_effect × regime_mult × gex_mult
+  </div>
+
+  <h3>V2 — Monte Carlo Regime Prediction <span class="tag" style="background:var(--green-dim);color:var(--green)">MC</span></h3>
+  <p>Extends V1 with a forward-looking Markov chain Monte Carlo regime predictor. A 6×6 transition matrix (CHOP, TREND_UP, TREND_DOWN, EXPANSION, COMPRESSION, UNKNOWN) is sampled 500 times to predict the <strong>next 15-minute regime</strong>. An attractor-repeller field assigns directional forces to live nodes.</p>
+  <div class="formula-block">
+<span class="comment">// Markov regime transition (6×6 matrix):</span>
+P(regime_{t+1} | regime_t) = transition_matrix[current][next]
+
+<span class="comment">// Monte Carlo: 500 simulations, 1-step horizon</span>
+forecast = Counter(sample_next_regime(current) for _ in range(500))
+regime_probs = {r: count/500 for r, count in forecast.items()}
+
+<span class="comment">// Attractor-repeller field:</span>
+force_i = direction_i × posterior_i × weight_i
+field_potential = tanh(Σᵢ force_i / √n)              <span class="comment">// ∈ [-1, +1]</span>
+
+<span class="comment">// V9 Hybrid Blend:</span>
+composite = 0.40 · domain_score + 0.35 · mc_adjusted + 0.25 · field_score
+  </div>
+
+  <h3>V3 — James-Stein Factorized Shrinkage <span class="tag" style="background:var(--orange-dim);color:var(--orange)">SHRINK</span></h3>
+  <p>Applies <strong>Stein's paradox</strong>: when estimating 3+ parameters simultaneously, shrinking each toward a grand mean always reduces total MSE. Four independent factors (regime, GEX, time-of-day, VIX bucket) each contribute a shrunk effect.</p>
+  <div class="formula-block">
+<span class="comment">// Shrinkage per factor:</span>
+shrunk_effect = raw_effect × n / (n + k)              <span class="comment">// k = min_support</span>
+
+<span class="comment">// 4 factors: Regime × GEX × ToD × VIX</span>
+factorized_logit = Σ_f  shrunk_effect_f(global_mean)
+factorized_posterior = inv_logit(factorized_logit)
+
+<span class="comment">// Blend with base:</span>
+composite = 0.60 · factorized + 0.40 · v1_base
+  </div>
+
+  <h3>V4 — Inverse-Variance Adaptive Ensemble <span class="tag" style="background:var(--purple-dim);color:var(--purple)">STACK</span></h3>
+  <p>Stacks V1, V2, V3 using the Bates-Granger combination framework. Static priors (0.35/0.35/0.30) are blended 50/50 with adaptive inverse-distance weights. A confidence discount fires when engines disagree.</p>
+  <div class="formula-block">
+<span class="comment">// Agreement metric:</span>
+σ = std_dev(v1_post, v2_post, v3_post)
+agreement = 1 − min(σ / 0.25, 1)
+
+<span class="comment">// Adaptive weighting (inverse distance from mean):</span>
+inv_dist_i = 1 / max(|p_i − mean|, 0.01)
+adaptive_w_i = inv_dist_i / Σ inv_dist
+
+<span class="comment">// Blend:</span>
+w_i = 0.5 · static_w_i + 0.5 · adaptive_w_i
+composite = Σ w_i · p_i
+
+<span class="comment">// Confidence discount when engines disagree:</span>
+if agreement < 0.7:
+    discount = 0.5 + 0.5 · agreement
+    composite = 0.5 + (composite − 0.5) · discount
+  </div>
+
+  <h3>V5 — Information-Theoretic Entropy Weighting <span class="tag" style="background:rgba(34,211,238,0.15);color:var(--cyan)">INFO</span></h3>
+  <p>Lets the <strong>data decide</strong> which nodes matter. Measures each node's actual information contribution via Shannon entropy and KL divergence, then MDL-prunes nodes whose signal doesn't justify their complexity cost. Rényi entropy guards against single-node domination.</p>
+  <div class="formula-block">
+<span class="comment">// Shannon entropy (node uncertainty):</span>
+H(p) = −p · log₂(p) − (1−p) · log₂(1−p)            <span class="comment">// max 1 bit at p=0.5</span>
+
+<span class="comment">// KL divergence (information gained per tick):</span>
+KL(posterior ‖ prior) = p·ln(p/q) + (1−p)·ln((1−p)/(1−q))
+
+<span class="comment">// EMA-smoothed KL → sustained info contributors:</span>
+KL_ema = 0.12 · KL_new + 0.88 · KL_ema_old
+
+<span class="comment">// Info weight per node:</span>
+info_weight = KL_ema × (1 − mean_entropy)             <span class="comment">// high info + low noise</span>
+
+<span class="comment">// MDL pruning (minimum active floor = 20):</span>
+complexity_penalty = 0.5 · log₂(n_ticks) / n_ticks
+keep node if KL_ema > penalty OR active_count < 20
+
+<span class="comment">// Rényi effective sample size:</span>
+H₂ = (1/(1−α)) · log₂(Σ wᵢᵅ)     <span class="comment">// α = 2</span>
+ESS = 2^H₂                          <span class="comment">// floor = 3.0</span>
+  </div>
+
+  <h3>V6 — Meta-Ensemble Production Signal <span class="tag" style="background:rgba(251,191,36,0.15);color:var(--yellow)">PROD</span></h3>
+  <p>The production signal. Runs all five engines per tick and collapses them with tail-agreement bonuses — because consensus matters most when engines agree on direction in the tails (high or low probability), which is where 0DTE money is made.</p>
+  <div class="formula-block">
+<span class="comment">// Pairwise agreement (5×5 matrix):</span>
+agreement[i][j] = 1 − |p_i − p_j|
+
+<span class="comment">// Adaptive weights (median-distance):</span>
+w_i = 0.5 · static_w_i + 0.5 · (1/dist_from_median) / Σ(1/dist)
+
+<span class="comment">// Tail-agreement bonus:</span>
+if ≥4 engines above 0.65 OR below 0.35:
+    logit_composite *= (1 + 0.15)                     <span class="comment">// amplify strong consensus</span>
+if all 5 agree:
+    logit_composite *= (1 + 0.25)
+
+<span class="comment">// Dispersion discount:</span>
+if agreement < 0.6:
+    composite = 0.5 + (composite − 0.5) × (0.4 + 0.6 · agreement)
+  </div>
+</section>
+
+<!-- 3. WHY IT'S SOLID -->
+<section id="solid">
+  <h2>3. Why It's Solid</h2>
+  <p>Every mathematical choice has a provable reason. No hand-waving — each technique either has a formal optimality guarantee or an empirical track record in the statistics literature.</p>
+
+  <div class="card">
+    <div class="guarantee">
+      <div class="icon" style="background:var(--accent)">1</div>
+      <div>
+        <strong>Logit-space combination is the only correct way to combine probabilities.</strong>
+        <p>Jeffrey's rule (1946): multiplying likelihood ratios in log-space is equivalent to additive combination in logit-space. This is the ONLY operation that respects the [0,1] constraint and preserves calibration. Averaging raw probabilities is provably miscalibrated — two 90% estimates averaged give 90%, but the logit combination gives 0.95 (which is correct: two independent pieces of evidence both saying 90% should be more certain than either alone).</p>
+      </div>
+    </div>
+    <div class="guarantee">
+      <div class="icon" style="background:var(--green)">2</div>
+      <div>
+        <strong>EMA with half-life creates a continuous rolling function, not binary snapshots.</strong>
+        <p>The exponential moving average with α = 1 − exp(−Δt·ln(2)/τ) is the unique linear filter that is (a) causal (uses only past data), (b) continuous in time (works for irregular tick spacing), and (c) has a well-defined memory horizon (half-life τ = 900s = 15 min). The posterior at any moment is a weighted integral of all past observations, with recent observations weighted exponentially more.</p>
+      </div>
+    </div>
+    <div class="guarantee">
+      <div class="icon" style="background:var(--orange)">3</div>
+      <div>
+        <strong>James-Stein shrinkage provably dominates MLE for 3+ parameters.</strong>
+        <p>Stein's paradox (1956, proved by James & Stein): when estimating ≥3 parameters simultaneously under squared-error loss, shrinking every estimate toward the grand mean ALWAYS has lower total MSE than the individual MLEs. This is not approximate — it's a strict domination result. With 200 nodes across 4 factor dimensions, shrinkage is mathematically guaranteed to improve total estimation quality.</p>
+      </div>
+    </div>
+    <div class="guarantee">
+      <div class="icon" style="background:var(--cyan)">4</div>
+      <div>
+        <strong>MDL pruning has information-theoretic optimality guarantees.</strong>
+        <p>Rissanen's Minimum Description Length principle (1978): the best model minimizes the total code length = model description + data given model. Barron, Rissanen & Yu (1998) prove MDL achieves minimax-optimal rates for model selection. When V5 prunes nodes whose KL information doesn't exceed the complexity penalty, it's provably selecting the model complexity that maximizes predictive compression.</p>
+      </div>
+    </div>
+    <div class="guarantee">
+      <div class="icon" style="background:var(--purple)">5</div>
+      <div>
+        <strong>KL divergence is the unique measure satisfying the chain rule of information.</strong>
+        <p>Cover & Thomas (2006): among all non-negative functions that vanish when two distributions are identical, the KL divergence is the ONLY one satisfying D(p‖q) = D(p₁‖q₁) + D(p₂‖q₂|p₁=q₁). This means information gains from different nodes decompose additively — exactly what we need for per-node information scoring.</p>
+      </div>
+    </div>
+    <div class="guarantee">
+      <div class="icon" style="background:var(--yellow)">6</div>
+      <div>
+        <strong>Inverse-variance ensemble stacking minimizes MSE.</strong>
+        <p>Bates & Granger (1969): given forecasters with known error variances, inverse-variance weighting is the minimum-MSE combination. The adaptive blend with static priors is a regularized version that's robust when variance estimates are noisy (early ticks). The 50/50 blend between static and adaptive is a bias-variance tradeoff that converges to pure adaptive as tick count grows.</p>
+      </div>
+    </div>
+    <div class="guarantee">
+      <div class="icon" style="background:var(--red)">7</div>
+      <div>
+        <strong>Each engine fails in a DIFFERENT regime — the meta-ensemble is robust across all states.</strong>
+        <p>V1 fails on regime transitions (static weights lag). V2 fails on stable regimes (MC noise adds no signal). V3 fails on sparse factor buckets (shrinkage collapses to prior). V4 fails when V1-V3 are correlated (no new information). V5 fails on the first 15 ticks (not enough history for entropy estimates). By combining orthogonal failure modes, V6 has no single-regime vulnerability.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. NODE ARCHITECTURE -->
+<section id="nodes">
+  <h2>4. Node Architecture</h2>
+  <p>200 ProbNodes across 8 domains. Each node carries a base rate, regime multipliers, GEX multipliers, a half-life, a priority (1-5), a verification verdict, and a strategy role. Nodes are weighted by a <strong>reliability function</strong> that implements partial pooling.</p>
+
+  <div class="formula-block">
+<span class="comment">// Reliability (partial pooling with observation count):</span>
+reliability(n) = n / (n + min_support)                <span class="comment">// min_support = 10 default</span>
+
+<span class="comment">// Effective weight per node:</span>
+effective_weight = reliability × (priority / 5) × verdict_weight
+<span class="comment">// verdict_weight: TRUE=1.0, PARTIALLY_TRUE=0.75, UNVERIFIED=0.5, FALSE=0.1</span>
+  </div>
+
+  <div class="card" style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Domain</th>
+          <th>Nodes</th>
+          <th>Importance</th>
+          <th style="min-width:120px">Weight</th>
+          <th>Key Signals</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Options Mechanics</td>
+          <td><code>44</code></td>
+          <td>0.20</td>
+          <td><span class="weight-bar" style="width:80px;background:var(--accent)"></span></td>
+          <td style="color:var(--text-muted);font-size:12px">Premium velocity, break-even move, IV rank, SIMONS_SIX sleeves, GEX flip</td>
+        </tr>
+        <tr>
+          <td>Order Flow</td>
+          <td><code>38</code></td>
+          <td>0.25</td>
+          <td><span class="weight-bar" style="width:100px;background:var(--green)"></span></td>
+          <td style="color:var(--text-muted);font-size:12px">CVD, VPIN, OBI, dark pool, iceberg detection, liquidity cascade</td>
+        </tr>
+        <tr>
+          <td>Risk</td>
+          <td><code>34</code></td>
+          <td>0.05</td>
+          <td><span class="weight-bar" style="width:20px;background:var(--red)"></span></td>
+          <td style="color:var(--text-muted);font-size:12px">Drawdown, correlation, concentration, VaR, Kelly optimal, tail risk</td>
+        </tr>
+        <tr>
+          <td>Intraday Stats</td>
+          <td><code>25</code></td>
+          <td>0.15</td>
+          <td><span class="weight-bar" style="width:60px;background:var(--orange)"></span></td>
+          <td style="color:var(--text-muted);font-size:12px">Chop detector, ORB, gap fill, ADR, volume profile, VWAP bands</td>
+        </tr>
+        <tr>
+          <td>Macro / Cross-Asset</td>
+          <td><code>21</code></td>
+          <td>0.12</td>
+          <td><span class="weight-bar" style="width:48px;background:var(--purple)"></span></td>
+          <td style="color:var(--text-muted);font-size:12px">ES-NQ futures lead, DXY, HYG, VIX term structure, yield curve</td>
+        </tr>
+        <tr>
+          <td>Regime</td>
+          <td><code>19</code></td>
+          <td>0.10</td>
+          <td><span class="weight-bar" style="width:40px;background:var(--cyan)"></span></td>
+          <td style="color:var(--text-muted);font-size:12px">IB breakout, BB squeeze, fractal alignment, cross-TF agreement</td>
+        </tr>
+        <tr>
+          <td>Timing</td>
+          <td><code>11</code></td>
+          <td>0.05</td>
+          <td><span class="weight-bar" style="width:20px;background:var(--yellow)"></span></td>
+          <td style="color:var(--text-muted);font-size:12px">Power hour, lunch fade, OPEX, theta cliff, overnight gap</td>
+        </tr>
+        <tr>
+          <td>Microstructure</td>
+          <td><code>8</code></td>
+          <td>0.08</td>
+          <td><span class="weight-bar" style="width:32px;background:var(--text-muted)"></span></td>
+          <td style="color:var(--text-muted);font-size:12px">Kyle's lambda, tick bars, bid-ask spread, depth imbalance</td>
+        </tr>
+        <tr style="border-top:2px solid var(--border)">
+          <td><strong>Total</strong></td>
+          <td><code><strong>200</strong></code></td>
+          <td><strong>1.00</strong></td>
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:1rem"><strong>Node lifecycle:</strong> A node starts inactive (<code>_is_live = False</code>). On its first observation, it goes live and begins EMA-decaying. When its required market context fields are missing, it remains at its base rate — no hallucinated data. Priority 1-5 scales the weight (priority/5), and the verification verdict further scales it (TRUE = 1.0, FALSE = 0.1). The reliability function <code>n/(n+10)</code> means a node with 1 observation has 9% of its full weight; at 10 observations it's at 50%; at 100 it's at 91%. This implements <strong>partial pooling</strong> — new nodes barely influence the composite until they've accumulated evidence.</p>
+</section>
+
+<!-- 5. CONFIDENCE ROUTING -->
+<section id="routing">
+  <h2>5. Confidence Routing</h2>
+  <p>The posterior doesn't just estimate direction — it controls <strong>how much capital to risk</strong>. Four tiers route from the posterior through Kelly sizing and an EV gate before any execution.</p>
+
+  <div class="card" style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Posterior Range</th>
+          <th>Uncertainty</th>
+          <th>Tier</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>&lt; 0.12</code> or <code>&gt; 0.88</code></td>
+          <td style="color:var(--green)">Low (&lt;24%)</td>
+          <td><strong style="color:var(--green)">FULL</strong></td>
+          <td>Full position. Kelly-optimal sizing.</td>
+        </tr>
+        <tr>
+          <td><code>0.12 – 0.22</code> or <code>0.78 – 0.88</code></td>
+          <td style="color:var(--accent)">Moderate</td>
+          <td><strong style="color:var(--accent)">HALF</strong></td>
+          <td>Half-size. Still fires if EV &gt; 0.</td>
+        </tr>
+        <tr>
+          <td><code>0.22 – 0.35</code> or <code>0.65 – 0.78</code></td>
+          <td style="color:var(--orange)">Elevated</td>
+          <td><strong style="color:var(--orange)">QUARTER</strong></td>
+          <td>Quarter-size. Informational only for high-conviction overrides.</td>
+        </tr>
+        <tr>
+          <td><code>0.35 – 0.65</code></td>
+          <td style="color:var(--red)">High (&gt;70%)</td>
+          <td><strong style="color:var(--red)">PAPER</strong></td>
+          <td>No live execution. Log for tracking only.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Kelly Criterion</h3>
+  <div class="formula-block">
+<span class="comment">// Kelly optimal fraction:</span>
+f* = p − (1 − p) / R                                  <span class="comment">// R = avg_win / avg_loss</span>
+f_actual = f* × 0.25                                   <span class="comment">// fractional Kelly (1/4)</span>
+
+<span class="comment">// Example: p=0.62, avg_win=$2.40, avg_loss=$1.20, R=2.0</span>
+f* = 0.62 − 0.38/2.0 = 0.43                           <span class="comment">// 43% Kelly</span>
+f_actual = 0.43 × 0.25 = 0.1075                        <span class="comment">// risk 10.75% of bankroll</span>
+  </div>
+
+  <h3>EV Gate</h3>
+  <div class="formula-block">
+<span class="comment">// Expected Value gate — fire only if positive:</span>
+EV = p̂ · W̄ − (1 − p̂) · L̄ − c                        <span class="comment">// c = round-trip cost ($0.20)</span>
+<span class="comment">// Must clear EV > 0 to execute. No fee first, fees layered after.</span>
+  </div>
+
+  <h3>Break-Even Move Gate</h3>
+  <div class="formula-block">
+<span class="comment">// Break-even underlying move for an option position:</span>
+ΔV ≈ Δ · ΔS + ½Γ · ΔS² + Θ · h                      <span class="comment">// first-order Greeks</span>
+<span class="comment">// Where h = expected hold time in years (≈ 0.00002 for 69s)</span>
+<span class="comment">// Solve for ΔS that makes ΔV = spread + cost</span>
+  </div>
+</section>
+
+<!-- 6. FAILURE MODES -->
+<section id="failure">
+  <h2>6. Failure Modes &amp; Graceful Degradation</h2>
+  <p>Every engine degrades gracefully when data sources are unavailable. No hallucinated data — missing fields leave nodes at their base rate.</p>
+
+  <div class="card" style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Engine</th>
+          <th>Primary Failure Mode</th>
+          <th>Degradation Behavior</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span style="color:var(--accent)">V1</span></td>
+          <td>Regime transitions (static weights lag by ~1 half-life)</td>
+          <td>Nodes with missing <code>required_fields</code> stay at base rate. Domain with 0 live nodes contributes nothing.</td>
+        </tr>
+        <tr>
+          <td><span style="color:var(--green)">V2</span></td>
+          <td>Stable regimes (MC noise adds no signal; wastes compute)</td>
+          <td>Falls back to V1 base posterior if MC forecast is uniform. Attractor field → 0 when no live nodes contribute directional force.</td>
+        </tr>
+        <tr>
+          <td><span style="color:var(--orange)">V3</span></td>
+          <td>Sparse factor buckets (shrinkage collapses everything to grand mean = 0.5)</td>
+          <td>With n=0, shrinkage formula gives weight=0 → that factor contributes nothing. Falls back to the 40% V1 base component.</td>
+        </tr>
+        <tr>
+          <td><span style="color:var(--purple)">V4</span></td>
+          <td>Correlated engines (V1-V3 agree → no diversity benefit)</td>
+          <td>Agreement → 1.0, no discount applied. Adaptive weights → equal (all same distance from mean). Degenerates to a simple average.</td>
+        </tr>
+        <tr>
+          <td><span style="color:var(--cyan)">V5</span></td>
+          <td>First 15 ticks (not enough history for entropy/KL estimates)</td>
+          <td>MDL pruning disabled for ticks &lt; 15. All 200 nodes active. Equivalent to V1 with uniform info-weights.</td>
+        </tr>
+        <tr>
+          <td><span style="color:var(--yellow)">V6</span></td>
+          <td>Complete data loss (no market context fields available)</td>
+          <td>All nodes at base rate → all engines ≈ 0.5 → composite ≈ 0.5 → PAPER tier → no execution. Fail-safe.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card accent-border" style="margin-top:1.5rem">
+    <strong>The invariant:</strong> Under complete data loss, every engine converges to a posterior near 0.5 (maximum uncertainty), which routes to the PAPER tier. The system never executes on no data — it fails closed. Under partial data loss, the reliability weighting (<code>n/(n+10)</code>) ensures nodes with zero observations contribute zero weight. The system degrades proportionally to the fraction of missing data, never catastrophically.
+  </div>
+</section>
+
+</div>
