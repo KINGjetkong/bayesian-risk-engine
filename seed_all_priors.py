@@ -962,7 +962,58 @@ def seed_all(registry: PriorRegistry) -> dict:
     counts["pod_a7"] = seed_pod_a7_priors(registry)
     counts["edgeful"] = seed_edgeful_report_priors(registry)
     counts["proprietary"] = seed_proprietary_priors(registry)
-    counts["TOTAL"] = sum(counts.values())
+
+    # F01 Morning Sniper priors (from Drive: IS PF 4.77 / OOS PF 3.61)
+    from seed_f01_sniper_priors import seed_f01_sniper_priors
+    counts["f01_sniper"] = seed_f01_sniper_priors(registry)
+
+    # V19 Conservative 0DTE strategy priors (from Drive backtest doc)
+    from seed_v19_priors import seed_v19_strategy_priors
+    counts["v19_strategy"] = seed_v19_strategy_priors(registry)
+
+    # Expansion priors (research, hypotheses, structural)
+    try:
+        from seed_expansion_priors import seed_expansion_all
+        expansion_counts = seed_expansion_all(registry)
+        for k, v in expansion_counts.items():
+            if k != "TOTAL":
+                counts[f"exp_{k}"] = v
+    except ImportError:
+        pass
+
+    # MADX STATE-3 extracted priors (from persistent brain doc)
+    try:
+        from extracted_madx_priors import MADX_EXTRACTED_PRIORS
+        from bayesian_prior_factory import BayesianPrior, PriorCategory, EvidenceTier
+        madx_count = 0
+        cat_map = {v.value: v for v in PriorCategory}
+        cat_map.update({v.name: v for v in PriorCategory})
+        tier_map = {v.value: v for v in EvidenceTier}
+        tier_map.update({v.name: v for v in EvidenceTier})
+        for item in MADX_EXTRACTED_PRIORS:
+            cat = cat_map.get(item.get("category", ""), PriorCategory.PROPRIETARY)
+            tier = tier_map.get(item.get("tier", ""), EvidenceTier.RESEARCH)
+            prior = BayesianPrior(
+                id=f"MADX_{item['name'].upper()[:60]}",
+                name=item["name"],
+                category=cat,
+                tier=tier,
+                condition=item.get("rule", ""),
+                outcome=item.get("rule", ""),
+                probability=item.get("probability", 0.50) or 0.50,
+                sample_size=item.get("sample_size", 0) or 0,
+                time_period=item.get("source", "MADX_STATE-3"),
+                source=item.get("source", "MADX_STATE-3"),
+                notes=item.get("notes", ""),
+            )
+            if prior.probability and 0 < prior.probability < 1:
+                registry.register(prior)
+                madx_count += 1
+        counts["madx_state3"] = madx_count
+    except (ImportError, Exception):
+        pass
+
+    counts["TOTAL"] = sum(v for k, v in counts.items() if k != "TOTAL")
     return counts
 
 
