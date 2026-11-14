@@ -1,0 +1,1195 @@
+<title>Fluid Alignment Doctrine</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #fafaf9;
+    --fg: #1c1917;
+    --surface: #f5f5f4;
+    --surface-raised: #ffffff;
+    --border: #d6d3d1;
+    --border-subtle: #e7e5e4;
+    --accent: #0c4a6e;
+    --accent-light: #e0f2fe;
+    --accent-mid: #7dd3fc;
+    --muted: #78716c;
+    --muted-light: #a8a29e;
+    --red: #991b1b;
+    --red-light: #fef2f2;
+    --green: #166534;
+    --green-light: #f0fdf4;
+    --amber: #92400e;
+    --amber-light: #fffbeb;
+    --blue: #1e40af;
+    --blue-light: #eff6ff;
+    --purple: #6b21a8;
+    --purple-light: #faf5ff;
+    --diagram-node: #f0f9ff;
+    --diagram-stroke: #0369a1;
+    --diagram-arrow: #0284c7;
+    --diagram-gate: #fef3c7;
+    --diagram-gate-stroke: #d97706;
+    --diagram-score: #dbeafe;
+    --diagram-score-stroke: #2563eb;
+    --diagram-calib: #f3e8ff;
+    --diagram-calib-stroke: #7c3aed;
+    --diagram-route: #dcfce7;
+    --diagram-route-stroke: #16a34a;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0c0a09;
+      --fg: #e7e5e4;
+      --surface: #1c1917;
+      --surface-raised: #292524;
+      --border: #44403c;
+      --border-subtle: #292524;
+      --accent: #7dd3fc;
+      --accent-light: #0c4a6e;
+      --accent-mid: #0284c7;
+      --muted: #a8a29e;
+      --muted-light: #78716c;
+      --red: #fca5a5;
+      --red-light: #450a0a;
+      --green: #86efac;
+      --green-light: #052e16;
+      --amber: #fcd34d;
+      --amber-light: #451a03;
+      --blue: #93c5fd;
+      --blue-light: #172554;
+      --purple: #d8b4fe;
+      --purple-light: #3b0764;
+      --diagram-node: #0c4a6e;
+      --diagram-stroke: #7dd3fc;
+      --diagram-arrow: #38bdf8;
+      --diagram-gate: #451a03;
+      --diagram-gate-stroke: #fbbf24;
+      --diagram-score: #172554;
+      --diagram-score-stroke: #60a5fa;
+      --diagram-calib: #3b0764;
+      --diagram-calib-stroke: #a78bfa;
+      --diagram-route: #052e16;
+      --diagram-route-stroke: #4ade80;
+      --code-bg: #0f172a;
+      --code-fg: #e2e8f0;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0c0a09;
+    --fg: #e7e5e4;
+    --surface: #1c1917;
+    --surface-raised: #292524;
+    --border: #44403c;
+    --border-subtle: #292524;
+    --accent: #7dd3fc;
+    --accent-light: #0c4a6e;
+    --accent-mid: #0284c7;
+    --muted: #a8a29e;
+    --muted-light: #78716c;
+    --red: #fca5a5;
+    --red-light: #450a0a;
+    --green: #86efac;
+    --green-light: #052e16;
+    --amber: #fcd34d;
+    --amber-light: #451a03;
+    --blue: #93c5fd;
+    --blue-light: #172554;
+    --purple: #d8b4fe;
+    --purple-light: #3b0764;
+    --diagram-node: #0c4a6e;
+    --diagram-stroke: #7dd3fc;
+    --diagram-arrow: #38bdf8;
+    --diagram-gate: #451a03;
+    --diagram-gate-stroke: #fbbf24;
+    --diagram-score: #172554;
+    --diagram-score-stroke: #60a5fa;
+    --diagram-calib: #3b0764;
+    --diagram-calib-stroke: #a78bfa;
+    --diagram-route: #052e16;
+    --diagram-route-stroke: #4ade80;
+    --code-bg: #0f172a;
+    --code-fg: #e2e8f0;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    line-height: 1.7;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 2rem;
+    max-width: 52rem;
+    margin: 0 auto;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 700;
+    line-height: 1.2;
+    text-wrap: balance;
+    color: var(--fg);
+  }
+
+  h1 { font-size: clamp(1.75rem, 4vw, 2.25rem); margin: 0 0 0.5rem; letter-spacing: -0.02em; }
+  h2 { font-size: clamp(1.25rem, 3vw, 1.5rem); margin: 3rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--border); letter-spacing: -0.01em; }
+  h3 { font-size: 1.125rem; margin: 2rem 0 0.75rem; color: var(--accent); }
+  h4 { font-size: 1rem; margin: 1.5rem 0 0.5rem; }
+
+  p { margin: 0 0 1rem; }
+
+  .subtitle {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-size: 1.05rem;
+    color: var(--muted);
+    margin: 0 0 2rem;
+    font-weight: 500;
+  }
+
+  .meta-line {
+    font-size: 0.8rem;
+    color: var(--muted-light);
+    font-family: 'JetBrains Mono', monospace;
+    margin: 0.25rem 0 0;
+  }
+
+  .analogy-card {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .analogy-card .card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .analogy-card .card-icon {
+    font-size: 1.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .analogy-card .card-title {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+
+  .analogy-card .card-subtitle {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .rain-icon { background: var(--blue-light); color: var(--blue); }
+  .jump-icon { background: var(--amber-light); color: var(--amber); }
+  .kobe-icon { background: var(--purple-light); color: var(--purple); }
+
+  .mapping-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.9rem;
+    padding: 0.4rem 0;
+  }
+
+  .mapping-row .arrow {
+    color: var(--muted-light);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+  }
+
+  .mapping-row .left { text-align: right; color: var(--muted); }
+  .mapping-row .right { font-weight: 500; }
+
+  @media (max-width: 500px) {
+    .mapping-row {
+      grid-template-columns: 1fr;
+      gap: 0.1rem;
+    }
+    .mapping-row .arrow { display: none; }
+    .mapping-row .left { text-align: left; font-size: 0.8rem; }
+    .mapping-row .right::before { content: "→ "; color: var(--muted-light); }
+  }
+
+  .formula-block {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .formula-block .comment { color: #94a3b8; }
+  .formula-block .keyword { color: #7dd3fc; }
+  .formula-block .number { color: #fbbf24; }
+  .formula-block .string { color: #86efac; }
+
+  .weight-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 1rem 0;
+    font-size: 0.875rem;
+  }
+
+  .weight-table th {
+    background: var(--surface);
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    color: var(--muted);
+  }
+
+  .weight-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+    vertical-align: top;
+  }
+
+  .weight-table tr:last-child td { border-bottom: none; }
+
+  .weight-table .mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+  }
+
+  .weight-table .positive { color: var(--green); font-weight: 600; }
+  .weight-table .negative { color: var(--red); font-weight: 600; }
+  .weight-table .neutral { color: var(--muted); }
+
+  .tier-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    letter-spacing: 0.03em;
+  }
+
+  .tier-locked { background: var(--green-light); color: var(--green); }
+  .tier-provisional { background: var(--amber-light); color: var(--amber); }
+  .tier-research { background: var(--blue-light); color: var(--blue); }
+  .tier-refuted { background: var(--red-light); color: var(--red); }
+
+  .diagram-container {
+    margin: 1.5rem 0;
+    overflow-x: auto;
+  }
+
+  .diagram-container svg {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-light);
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.9rem;
+  }
+
+  .callout-red {
+    border-left-color: var(--red);
+    background: var(--red-light);
+  }
+
+  .callout-green {
+    border-left-color: var(--green);
+    background: var(--green-light);
+  }
+
+  .callout-amber {
+    border-left-color: var(--amber);
+    background: var(--amber-light);
+  }
+
+  .invariant {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border-radius: 6px;
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+  }
+
+  .invariant-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: var(--accent);
+    color: var(--bg);
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted-light);
+    margin-right: 0.5rem;
+  }
+
+  .phase-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .phase-card {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    position: relative;
+  }
+
+  .phase-card::before {
+    content: attr(data-phase);
+    position: absolute;
+    top: -0.6rem;
+    left: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: var(--bg);
+    padding: 0 0.4rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .phase-card h4 { margin: 0 0 0.4rem; font-size: 0.95rem; }
+
+  .phase-card .weight-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .phase-card ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .phase-card li { margin-bottom: 0.25rem; }
+
+  .toc {
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    font-size: 0.9rem;
+  }
+
+  .toc-title {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .toc ol {
+    margin: 0;
+    padding-left: 1.5rem;
+    list-style: none;
+    counter-reset: toc;
+  }
+
+  .toc li {
+    counter-increment: toc;
+    margin-bottom: 0.35rem;
+    font-weight: 500;
+  }
+
+  .toc li::before {
+    content: counter(toc, decimal-leading-zero);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted-light);
+    margin-right: 0.5rem;
+  }
+
+  .toc a {
+    color: var(--fg);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+
+  .toc a:hover { border-bottom-color: var(--accent); }
+
+  .exit-ladder-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    font-size: 0.875rem;
+  }
+
+  .exit-ladder-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-width: 8rem;
+  }
+
+  .exit-ladder-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--accent);
+    opacity: 0.7;
+  }
+
+  .exit-ladder-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+    min-width: 5rem;
+    text-align: right;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--border-subtle);
+    margin: 2rem 0;
+  }
+
+  .footer {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--border);
+    font-size: 0.8rem;
+    color: var(--muted-light);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  @media print {
+    body { max-width: none; padding: 1cm; font-size: 11pt; }
+    h2 { break-before: page; }
+    .analogy-card, .formula-block, .callout, .invariant, .phase-card { break-inside: avoid; }
+    .diagram-container { break-inside: avoid; }
+  }
+</style>
+
+<h1>Fluid Alignment Doctrine</h1>
+<p class="subtitle">How the TIME MINE confluence system works, explained through three analogies and the math that implements them</p>
+<p class="meta-line">MADX Research · State Registry v943 · November 2026</p>
+<p class="meta-line">Source: bayesian-risk-engine / CONTINUOUS_STATE_CONTINUUM / HFT_MICROSTRUCTURE_RESEARCH</p>
+
+<div class="toc">
+  <div class="toc-title">Contents</div>
+  <ol>
+    <li><a href="#framework">The Framework: Three Analogies, One System</a></li>
+    <li><a href="#rain">Rain &amp; Weather — Regime States (4-Phase Lock)</a></li>
+    <li><a href="#jumped">Getting Jumped — Fluid Event Timing (Intensity &amp; Clocks)</a></li>
+    <li><a href="#kobe">Kobe — Automatic Execution (Bayesian Engine Stack)</a></li>
+    <li><a href="#pipeline">The TIME MINE Pipeline: GATES → SCORES → CALIBRATE → ROUTER</a></li>
+    <li><a href="#weights">Locked Weights &amp; Thresholds (State Registry)</a></li>
+    <li><a href="#exits">Exit Doctrine: The Edge Is the Exit</a></li>
+    <li><a href="#invariants">System Invariants &amp; Non-Negotiables</a></li>
+    <li><a href="#benchmarks">Benchmarks: What Any New Engine Must Beat</a></li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="framework"><span class="section-num">01</span> The Framework: Three Analogies, One System</h2>
+
+<p>Every trading decision in this system passes through the same architecture: a nested hierarchy of regime states, scored by continuously-weighted microstructure signals, routed to exits by calibrated probability. The system is built to handle fluid, real-time market conditions where timing cannot be chosen in advance. Three analogies explain how this works at different scales.</p>
+
+<div class="analogy-card">
+  <div class="card-head">
+    <div class="card-icon rain-icon">&#9730;</div>
+    <div>
+      <div class="card-title">Rain &amp; Weather</div>
+      <div class="card-subtitle">Regime states nest from macro to tick — you dress for the forecast but react to the raindrop</div>
+    </div>
+  </div>
+  <div class="mapping-row">
+    <div class="left">Season / climate</div>
+    <div class="arrow">→</div>
+    <div class="right">Macro bias (daily, 200d SMA, VIX)</div>
+  </div>
+  <div class="mapping-row">
+    <div class="left">Today's weather forecast</div>
+    <div class="arrow">→</div>
+    <div class="right">Day bias (15-min trend regime)</div>
+  </div>
+  <div class="mapping-row">
+    <div class="left">Rain on your skin</div>
+    <div class="arrow">→</div>
+    <div class="right">15-min execution window (5m alignment, flow)</div>
+  </div>
+  <div class="mapping-row">
+    <div class="left">Individual raindrop</div>
+    <div class="arrow">→</div>
+    <div class="right">Tick/1s micro-execution (quote lean, spread)</div>
+  </div>
+</div>
+
+<div class="analogy-card">
+  <div class="card-head">
+    <div class="card-icon jump-icon">&#9889;</div>
+    <div>
+      <div class="card-title">Getting Jumped</div>
+      <div class="card-subtitle">Events arrive without warning — the system must already be measuring when the hit comes</div>
+    </div>
+  </div>
+  <div class="mapping-row">
+    <div class="left">Situational awareness</div>
+    <div class="arrow">→</div>
+    <div class="right">228-cell clock lattice (always running)</div>
+  </div>
+  <div class="mapping-row">
+    <div class="left">The hit arrives</div>
+    <div class="arrow">→</div>
+    <div class="right">Hawkes self-excitation spike (event clustering)</div>
+  </div>
+  <div class="mapping-row">
+    <div class="left">React instantly</div>
+    <div class="arrow">→</div>
+    <div class="right">Microstructure score budget fires (base 50 + components)</div>
+  </div>
+  <div class="mapping-row">
+    <div class="left">Survive the sequence</div>
+    <div class="arrow">→</div>
+    <div class="right">Post-entry path classifier (30–120s winner separation)</div>
+  </div>
+</div>
+
+<div class="analogy-card">
+  <div class="card-head">
+    <div class="card-icon kobe-icon">&#9733;</div>
+    <div>
+      <div class="card-title">Kobe</div>
+      <div class="card-subtitle">10,000 hours of practice make the shot automatic — 200 Bayesian nodes make the decision automatic</div>
+    </div>
+  </div>
+  <div class="mapping-row">
+    <div class="left">Court vision</div>
+    <div class="arrow">→</div>
+    <div class="right">200-node Bayesian probability engine</div>
+  </div>
+  <div class="mapping-row">
+    <div class="left">Shot selection</div>
+    <div class="arrow">→</div>
+    <div class="right">Path score → posterior logistic → route thresholds</div>
+  </div>
+  <div class="mapping-row">
+    <div class="left">Follow-through</div>
+    <div class="arrow">→</div>
+    <div class="right">Exit ladder (TP1/TP2/RUNNER) — the edge IS the exit</div>
+  </div>
+  <div class="mapping-row">
+    <div class="left">Never the same shot twice</div>
+    <div class="arrow">→</div>
+    <div class="right">Kelly fraction sizing × regime-adaptive allocation</div>
+  </div>
+</div>
+
+<p>These analogies are not metaphors. Each maps directly to locked mathematical components in the system. The sections below walk through each one in detail.</p>
+
+<!-- ============================================================ -->
+<h2 id="rain"><span class="section-num">02</span> Rain &amp; Weather — Regime States (4-Phase Lock)</h2>
+
+<p>The regime lock is a nested filter. You cannot trade at the micro level without the macro, structural, and window levels all being assessed. Each phase has a different time resolution, a different weight on the final score, and a different set of signals. The system never conflates them — merging timescales cancels them out (Contradiction C17, RESOLVED).</p>
+
+<h3>The Four Phases</h3>
+
+<div class="phase-grid">
+  <div class="phase-card" data-phase="PHASE 4 — MACRO">
+    <h4>Macro Bias</h4>
+    <div class="weight-tag" style="color:var(--red)">Weight: 0.65x</div>
+    <ul>
+      <li>Daily chart, 200-day SMA filter</li>
+      <li>VIX thresholds: HALT 40, SIZE_HALVE 25, PENALTY_HIGH 30</li>
+      <li>OPEX flags, event calendar</li>
+      <li>Circuit breakers (3 consecutive losses, 5% gap down)</li>
+      <li>Timeframe: 1H / daily</li>
+    </ul>
+  </div>
+
+  <div class="phase-card" data-phase="PHASE 3 — STRUCTURAL">
+    <h4>Day Bias</h4>
+    <div class="weight-tag" style="color:var(--amber)">Weight: 1.15x</div>
+    <ul>
+      <li>15-min trend regime (ADX &gt; 25 = trending)</li>
+      <li>ALMA regime detection (trending vs choppy)</li>
+      <li>Range bar structural alignment (2-day)</li>
+      <li>Timeframe: 5m / 15m</li>
+    </ul>
+  </div>
+
+  <div class="phase-card" data-phase="PHASE 2 — WINDOW">
+    <h4>Execution Window</h4>
+    <div class="weight-tag" style="color:var(--blue)">Weight: 1.50x (Micro)</div>
+    <ul>
+      <li>2.5-min velocity, 5-min alignment</li>
+      <li>ATR condition, cross-asset confirmation</li>
+      <li>Greeks alignment (GEX thrust, gamma-weighted volume)</li>
+      <li>Timeframe: 1m / 5m</li>
+    </ul>
+  </div>
+
+  <div class="phase-card" data-phase="PHASE 1 — EXECUTION">
+    <h4>Tick / 1-Second</h4>
+    <div class="weight-tag" style="color:var(--green)">Weight: direct gate</div>
+    <ul>
+      <li>Quote lean (bid/ask size imbalance)</li>
+      <li>Spread collapse &le; 0.011 (dime lattice lock)</li>
+      <li>Headroom &ge; $0.50, Tap 1 only</li>
+      <li>Micro-stall detector (spread 0–1.1&cent; for &ge; 2.0s)</li>
+      <li>Timeframe: tick / 1s</li>
+    </ul>
+  </div>
+</div>
+
+<h3>The MINE Stack: Multiplicative Tier Weighting</h3>
+
+<p>The four phases are not summed. They multiply, using the MADX MINE stack:</p>
+
+<div class="formula-block">
+<span class="comment">// M-I-N-E: each tier multiplies the base signal</span>
+<span class="keyword">M</span> = Micro-Execution tier      × <span class="number">1.50</span>
+<span class="keyword">I</span> = Intermediate-Structural    × <span class="number">1.15</span>
+<span class="keyword">N</span> = Normalized Clocks           (time normalization, not a weight)
+<span class="keyword">E</span> = Extended Macro-Regime      × <span class="number">0.65</span>
+
+<span class="comment">// Threshold scaling across frames:</span>
+Threshold_frame = Base_Threshold × sqrt(Frame_Seconds / <span class="number">60</span>)
+
+<span class="comment">// A 15-min frame scales the threshold by sqrt(900/60) = 3.87x</span>
+<span class="comment">// A 1s frame keeps it near base (sqrt(1/60) ≈ 0.13x)</span>
+</div>
+
+<div class="callout">
+  The macro gets the <em>lowest</em> weight (0.65x) because it changes the slowest and is the least specific to the current trade. The micro gets the highest (1.50x) because that is where the actual fill happens. This is counterintuitive: most systems over-weight the big picture and under-weight execution. This system does the opposite because the State Registry finding is clear — <strong>"the signal is in the execution, not the signal generator"</strong> (SEPARABILITY_FINDING, tier PROVISIONAL, 96% of losing trades are statistically indistinguishable from winners at entry).
+</div>
+
+<h3>Regime Detection: Not Hard Clocks</h3>
+
+<p>The State Registry (Section 9) explicitly warns: <strong>do NOT hard-blackout by clock.</strong> The corpus has four mutually exclusive time-of-day prescriptions that contradict each other. The only LOCKED evidence is from live Alpaca forensics: before 11:20 ET = 66.9% WR, PF 2.35, +$48,490. After 11:20 ET = 41% WR, PF 0.46, −$99,425.</p>
+
+<p>The system uses the V6 HONEST treatment instead: a continuous negative weight on time-of-day (−0.06 in PATH_SCORE_WEIGHTS) that lets per-asset, per-regime calibration discover the shape from data rather than imposing hard cutoffs.</p>
+
+<!-- ============================================================ -->
+<h2 id="jumped"><span class="section-num">03</span> Getting Jumped — Fluid Event Timing</h2>
+
+<p>In a street fight, you do not get to choose when the first punch arrives. You have to already be watching, already have your guard up, already know the escape routes. The system mirrors this: it must already be measuring when the market event arrives, because by the time you see the move, the opportunity window is already closing.</p>
+
+<h3>The Hawkes Self-Excitation Model</h3>
+
+<p>Market events cluster. A large trade triggers more large trades. A volatility spike triggers more volatility. This is modeled as a Hawkes process where past events increase the probability of future events:</p>
+
+<div class="formula-block">
+<span class="comment">// Hawkes intensity: current arrival rate</span>
+&lambda;(t) = &mu; + &Sigma; &alpha;&beta; &middot; e<sup>-&beta;(t - t<sub>i</sub>)</sup>
+
+<span class="comment">// Calibrated parameters (HFT Microstructure Research):</span>
+&mu; = <span class="number">0.244</span>    <span class="comment">// baseline arrival rate</span>
+&kappa; = <span class="number">0.742</span>    <span class="comment">// branching ratio (sub-critical: &lt; 1)</span>
+&beta; = <span class="number">0.196</span>    <span class="comment">// decay rate</span>
+
+<span class="comment">// Reversion half-life:</span>
+t<sub>half</sub> = ln(2) / &beta; = <span class="number">3.54 seconds</span>
+
+<span class="comment">// Closed-form signature:</span>
+C(&tau;) = &kappa; &middot; e<sup>-&beta;(1-&kappa;)&tau;</sup>
+</div>
+
+<p>The branching ratio &kappa; = 0.742 means each event generates 0.742 "child" events on average. The system is sub-critical (it doesn't explode), but heavily self-exciting — nearly three-quarters of observed events are triggered by previous events, not external news. The half-life of 3.54 seconds means the system's memory is short: if you are not already measuring when the cluster starts, you miss the entire window.</p>
+
+<h3>The 228-Cell Clock Lattice</h3>
+
+<p>The system's "always watching" is implemented as a 228-cell clock lattice: 38 indicator clocks across 6 lookback frames. Every cell is evaluated continuously. This is what makes the system ready when the "jump" arrives.</p>
+
+<div class="formula-block">
+<span class="comment">// 38 clocks × 6 lookback frames = 228 cells</span>
+<span class="comment">// Lookback frames (from State Registry, Section 14):</span>
+<span class="number">1s</span>   → ALMOS 1s exit stack, microstructure report
+<span class="number">5s</span>   → AutoExit loop cadence
+<span class="number">30s</span>  → ZLOCK z-score window, hold bucket boundary
+<span class="number">60s</span>  → stale_60, hold bucket boundary
+<span class="number">120s</span> → vel_120s — <span class="string">STRONGEST P&amp;L predictor</span>, buffer sleeve tmax
+<span class="number">180s</span> → vel_180s, TIME_180S exit tag
+
+<span class="comment">// Timeframe weighting rule (from TIMEFRAME_NOTE):</span>
+<span class="comment">// 1H at 3x the weight of 1m</span>
+<span class="comment">// Let per-asset calibration discover the shape</span>
+<span class="comment">// Do NOT design 11 pre-entry timeframes as 11 gates</span>
+<span class="comment">// Use them as continuously-weighted contributions</span>
+</div>
+
+<h3>Microstructure Score Budget: The Reaction System</h3>
+
+<p>When the event arrives (the "jump"), the system scores it using the microstructure score budget — a 100-point scoring system where the base is 50 and components add or subtract:</p>
+
+<table class="weight-table">
+  <thead>
+    <tr><th>Component</th><th>Points</th><th>Role</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Base</td><td class="mono neutral">50</td><td>Starting point — neutral</td></tr>
+    <tr><td>vel_5 (5s velocity)</td><td class="mono positive">+15</td><td>Immediate directional momentum</td></tr>
+    <tr><td>stale_60 (60s staleness)</td><td class="mono positive">+12</td><td>Compression before expansion</td></tr>
+    <tr><td>expansion</td><td class="mono positive">+12</td><td>Range expansion confirming breakout</td></tr>
+    <tr><td>stale_10 (10s staleness)</td><td class="mono positive">+8</td><td>Micro-compression signature</td></tr>
+    <tr><td>momentum</td><td class="mono negative">-8 (penalty)</td><td>Don't chase — penalizes high |momentum|</td></tr>
+    <tr><td>green_run</td><td class="mono positive">+5</td><td>Consecutive directional bars</td></tr>
+  </tbody>
+</table>
+
+<div class="callout callout-amber">
+  Contradiction C17 (RESOLVED): Microstructure prefers LOW |momentum| — don't chase. Confluence rewards HIGH aligned momentum. These are different timescales. The system keeps them in separate rooms with explicit labels; merging cancels them out.
+</div>
+
+<h3>Signal Trust Hierarchy</h3>
+
+<p>Not all signals are equally trustworthy. The HFT Microstructure Research establishes a trust tier for OPRA data:</p>
+
+<table class="weight-table">
+  <thead>
+    <tr><th>Tier</th><th>Source</th><th>Trust</th><th>Example Signals</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="tier-badge tier-locked">TIER 1</span></td><td>Quotes only (BBO)</td><td class="mono positive">HIGH</td><td>Spread, depth, quote lean, market resilience</td></tr>
+    <tr><td><span class="tier-badge tier-provisional">TIER 2</span></td><td>Trade volume (no side)</td><td class="mono" style="color:var(--amber)">MEDIUM</td><td>Total volume, trade rate, dollar flow</td></tr>
+    <tr><td><span class="tier-badge tier-research">TIER 3</span></td><td>Inferred aggressor</td><td class="mono negative">LOW on OPRA</td><td>CVD, VPIN, signed OFI</td></tr>
+  </tbody>
+</table>
+
+<div class="callout callout-red">
+  Tick-rule classification on OPRA has 94.5% per-trade accuracy but produces <strong>169% CVD magnitude error with sign flips</strong>. A 5.5% misclassification rate propagates to cumulative metrics because errors do not cancel — they compound. Any CVD or VPIN signal on options must be tagged [TIER-3/INFERRED] and never used as a standalone gate.
+</div>
+
+<!-- ============================================================ -->
+<h2 id="kobe"><span class="section-num">04</span> Kobe — Automatic Execution</h2>
+
+<p>Kobe Bryant's shots looked effortless because they were the product of 10,000 hours of deliberate practice. Every decision — when to drive, when to pull up, when to pass — was trained into automatic pattern recognition. This system's 200-node Bayesian engine does the same: it collapses 8 probability domains into a single posterior that routes to an exit strategy in under a second.</p>
+
+<h3>The 200-Node Bayesian Engine</h3>
+
+<p>The engine operates in logit space, where probabilities compose linearly:</p>
+
+<div class="formula-block">
+<span class="comment">// Logit transform: unbounded space for linear composition</span>
+logit(p) = ln(p / (1 - p))
+
+<span class="comment">// Composite score: weighted sum of logit-transformed effects</span>
+composite = inv_logit(&Sigma; w<sub>i</sub> &middot; logit_effect<sub>i</sub>)
+
+<span class="comment">// Where inv_logit(x) = 1 / (1 + e^(-x))</span>
+<span class="comment">// Prior: LogNormal, EMA-smoothed with 15-min half-life</span>
+
+<span class="comment">// 8 probability domains (ProbNode groups):</span>
+<span class="comment">// momentum, volatility, microstructure, flow,</span>
+<span class="comment">// greeks, cross-asset, regime, execution</span>
+</div>
+
+<h3>Multi-Strike Confluence: Independent Probability Pathways</h3>
+
+<p>Each strike in the option chain is treated as an independent probability pathway. The total probability of at least one path succeeding is:</p>
+
+<div class="formula-block">
+<span class="comment">// Multiplicative confluence across N strikes:</span>
+P_total = 1 - &Pi;(1 - P<sub>i</sub>)
+
+<span class="comment">// Where P_i = probability of strike i reaching target</span>
+<span class="comment">// With 3 strikes at P = 0.30 each:</span>
+<span class="comment">// P_total = 1 - (0.70)^3 = 0.657</span>
+
+<span class="comment">// This is why the multi-strike grid (MSG) exists:</span>
+<span class="comment">// ATM ± N strikes, 6 MSG bar types, 10 grid features</span>
+<span class="comment">// Each strike path measured independently</span>
+</div>
+
+<h3>The V1–V6 Engine Stack</h3>
+
+<table class="weight-table">
+  <thead>
+    <tr><th>Engine</th><th>Method</th><th>Contribution</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>V1 — BayesianProbabilityEngine</td><td>200-node logit-space collapse across 8 domains</td><td>Core posterior</td></tr>
+    <tr><td>V2 — MonteCarlo</td><td>Regime-aware path simulation (10k paths)</td><td>Distribution tails</td></tr>
+    <tr><td>V3 — Factorized Shrinkage</td><td>Ledoit-Wolf covariance shrinkage</td><td>Decorrelated weights</td></tr>
+    <tr><td>V4 — Ensemble</td><td>V1–V3 meta-ensemble</td><td>Variance reduction</td></tr>
+    <tr><td>V5 — Entropy</td><td>Information-theoretic signal weighting</td><td>Adaptive signal selection</td></tr>
+    <tr><td>V6 — Meta-Ensemble</td><td>All five stacked with graceful degradation</td><td>Production posterior</td></tr>
+  </tbody>
+</table>
+
+<div class="callout callout-green">
+  <strong>V6 HONEST Engine benchmark</strong> (LOCKED): 1,010 trades on real ThetaData NBBO, QQQ Jun 2–13. WR 37.0%, PF 1.13, expectancy $309/trade, payoff ratio 1.89. This is the only reproducible single-engine PF &gt; 1.0 on real option NBBO data. Any new engine must reproduce this number before changing anything.
+</div>
+
+<h3>Path Score → Posterior → Route</h3>
+
+<p>The path score is a weighted sum of features that predicts the premium path after entry:</p>
+
+<div class="formula-block">
+<span class="comment">// PATH_SCORE_WEIGHTS (LOCKED, State Registry Section 5):</span>
+velocity     <span class="number">0.22</span>   <span class="comment">// 2.5-min price velocity</span>
+acceleration <span class="number">0.16</span>   <span class="comment">// velocity of velocity</span>
+vpump        <span class="number">0.13</span>   <span class="comment">// volume pump signature</span>
+gex_thrust   <span class="number">0.13</span>   <span class="comment">// gamma exposure thrust</span>
+atr          <span class="number">0.13</span>   <span class="comment">// ATR-normalized range</span>
+cross_asset  <span class="number">0.12</span>   <span class="comment">// NQ/ES/SPY cross-confirmation</span>
+m5           <span class="number">0.09</span>   <span class="comment">// 5-minute trend alignment</span>
+tod         <span class="number">-0.06</span>   <span class="comment">// time-of-day (continuous, negative)</span>
+
+<span class="comment">// Posterior logistic transform:</span>
+<span class="keyword">POSTERIOR_LOGISTIC_GAIN</span> = <span class="number">2.2</span>
+p = 1 / (1 + exp(-<span class="number">2.2</span> &middot; score))
+
+<span class="comment">// Route thresholds (probability → exit strategy):</span>
+<span class="keyword">RUNNER</span>  &ge; <span class="number">0.75</span>   <span class="comment">// high confidence → hold for runner</span>
+<span class="keyword">HYBRID</span>  &ge; <span class="number">0.45</span>   <span class="comment">// moderate → partial exits + trail</span>
+<span class="keyword">SWEEP</span>   &lt; <span class="number">0.45</span>   <span class="comment">// low confidence → fast in/out</span>
+</div>
+
+<p>The gain of 2.2 is deliberately steep: a score of 0.5 maps to p = 0.75 (RUNNER), a score of 0.0 maps to p = 0.50 (SWEEP boundary), and a score of −0.5 maps to p = 0.25 (hard avoid). The system is designed to commit strongly to its read rather than hedge every position identically.</p>
+
+<!-- ============================================================ -->
+<h2 id="pipeline"><span class="section-num">05</span> The TIME MINE Pipeline</h2>
+
+<p>The four-layer pipeline implements the full decision flow. Every potential trade passes through all four layers in order. No layer can be skipped.</p>
+
+<div class="diagram-container">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" width="720" height="420">
+  <defs>
+    <marker id="arrowhead" viewBox="0 0 10 7" refX="9" refY="3.5" markerWidth="8" markerHeight="6" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="var(--diagram-arrow)"/>
+    </marker>
+  </defs>
+
+  <!-- Layer 1: GATES -->
+  <rect x="20" y="20" width="680" height="76" rx="8" fill="var(--diagram-gate)" stroke="var(--diagram-gate-stroke)" stroke-width="1.5"/>
+  <text x="40" y="43" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="14" fill="var(--diagram-gate-stroke)">LAYER 1: GATES</text>
+  <text x="40" y="63" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--fg)">Hard reject if Option Spread &gt; 6%  or  Premium &lt; $0.50  or  VIX &gt; 40  or  3+ consecutive losses</text>
+  <text x="40" y="80" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--muted)">Binary pass/fail. No scoring, no weighting. Fail = no trade.</text>
+
+  <!-- Arrow 1→2 -->
+  <line x1="360" y1="96" x2="360" y2="124" stroke="var(--diagram-arrow)" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="375" y="115" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--muted)">pass</text>
+
+  <!-- Layer 2: SCORES -->
+  <rect x="20" y="126" width="680" height="76" rx="8" fill="var(--diagram-score)" stroke="var(--diagram-score-stroke)" stroke-width="1.5"/>
+  <text x="40" y="149" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="14" fill="var(--diagram-score-stroke)">LAYER 2: SCORES</text>
+  <text x="40" y="169" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--fg)">Path Score = 0.22·vel + 0.16·accel + 0.13·vpump + 0.13·gex + 0.13·atr + 0.12·cross + 0.09·m5 - 0.06·tod</text>
+  <text x="40" y="186" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--muted)">Continuous [-1, +1]. Weighted sum, not a stack of binary filters.</text>
+
+  <!-- Arrow 2→3 -->
+  <line x1="360" y1="202" x2="360" y2="230" stroke="var(--diagram-arrow)" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="375" y="221" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--muted)">score</text>
+
+  <!-- Layer 3: CALIBRATE -->
+  <rect x="20" y="232" width="680" height="76" rx="8" fill="var(--diagram-calib)" stroke="var(--diagram-calib-stroke)" stroke-width="1.5"/>
+  <text x="40" y="255" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="14" fill="var(--diagram-calib-stroke)">LAYER 3: CALIBRATE</text>
+  <text x="40" y="275" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--fg)">p = 1 / (1 + exp(-2.2 · score))  →  Walk-Forward validation  →  DSR Deflation curves</text>
+  <text x="40" y="292" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--muted)">Maps raw score to calibrated probability. Per-asset, per-regime.</text>
+
+  <!-- Arrow 3→4 -->
+  <line x1="360" y1="308" x2="360" y2="336" stroke="var(--diagram-arrow)" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="375" y="327" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--muted)">P(runner)</text>
+
+  <!-- Layer 4: ROUTER -->
+  <rect x="20" y="338" width="680" height="76" rx="8" fill="var(--diagram-route)" stroke="var(--diagram-route-stroke)" stroke-width="1.5"/>
+  <text x="40" y="361" font-family="Space Grotesk, sans-serif" font-weight="700" font-size="14" fill="var(--diagram-route-stroke)">LAYER 4: ROUTER</text>
+  <text x="40" y="381" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--fg)">P &ge; 0.75 → RUNNER  |  P &ge; 0.45 → HYBRID  |  P &lt; 0.45 → SWEEP</text>
+  <text x="40" y="398" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--muted)">Directs exit strategy dynamically via calibrated P(Runner). Each route has its own exit ladder.</text>
+</svg>
+</div>
+
+<h3>Confluence Layer Budget</h3>
+
+<p>The confluence engine allocates its total scoring budget across layers (not the same as the path score weights — these govern the broader confluence assessment):</p>
+
+<table class="weight-table">
+  <thead>
+    <tr><th>Layer</th><th>Budget</th><th>What It Measures</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>multi_tf_fractal_alignment</td><td class="mono positive">40.0</td><td>Multi-timeframe fractal agreement (tick → 15m → daily all aligned)</td></tr>
+    <tr><td>greeks_gate</td><td class="mono positive">20.0</td><td>Delta/gamma alignment, IV percentile, term structure</td></tr>
+    <tr><td>options_flow_pc_gex</td><td class="mono positive">15.0</td><td>Put/call flow, GEX thrust, unusual activity</td></tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  Multi-timeframe fractal alignment gets the largest budget (40 of 75 points) because it is the one signal that spans all four phases of the regime lock. When tick, 1m, 5m, 15m and daily all agree on direction, the system is in its highest-confidence state. This is the "Rain &amp; Weather" analogy at its most precise: every layer of the atmosphere is aligned.
+</div>
+
+<!-- ============================================================ -->
+<h2 id="weights"><span class="section-num">06</span> Locked Weights &amp; Thresholds</h2>
+
+<h3>Entry Gates (Binary — from State Registry)</h3>
+
+<table class="weight-table">
+  <thead>
+    <tr><th>Gate</th><th>Value</th><th>Tier</th><th>Source</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>MIN_PREMIUM</td><td class="mono">$0.50</td><td><span class="tier-badge tier-locked">LOCKED</span></td><td>V6 HONEST / owner rule</td></tr>
+    <tr><td>MAX_SPREAD_PCT</td><td class="mono">6%</td><td><span class="tier-badge tier-locked">LOCKED</span></td><td>Liquidity gate</td></tr>
+    <tr><td>PREMIUM_BAND</td><td class="mono">$1.00–$2.00</td><td><span class="tier-badge tier-provisional">PROVISIONAL</span></td><td>73% WR, +$8,627 in band</td></tr>
+    <tr><td>Spread Cap</td><td class="mono">&le; 0.011</td><td><span class="tier-badge tier-locked">LOCKED</span></td><td>Dime lattice lock</td></tr>
+    <tr><td>Headroom</td><td class="mono">&ge; $0.50</td><td><span class="tier-badge tier-locked">LOCKED</span></td><td>Minimum profit potential</td></tr>
+    <tr><td>Tap</td><td class="mono">1 only</td><td><span class="tier-badge tier-locked">LOCKED</span></td><td>70.6% WR, PF 1.62</td></tr>
+    <tr><td>Pullback Magnitude</td><td class="mono">8–20%</td><td><span class="tier-badge tier-provisional">PROVISIONAL</span></td><td>Sweet spot from MFE/MAE analysis</td></tr>
+    <tr><td>Decimal Bias</td><td class="mono">&gt; 0.55</td><td><span class="tier-badge tier-provisional">PROVISIONAL</span></td><td>Buyers winning micro-auction at half-dollar</td></tr>
+  </tbody>
+</table>
+
+<h3>Sizing Rules</h3>
+
+<div class="formula-block">
+<span class="comment">// Kelly fraction sizing:</span>
+f* = p - ((1 - p) / R)
+<span class="comment">// where p = posterior probability, R = payoff ratio</span>
+<span class="comment">// Applied at 1/4 Kelly (fractional, conservative)</span>
+
+<span class="comment">// Fixed contract sizing (LOCKED from live forensics):</span>
+Morning (pre-11:20 ET):  <span class="number">100</span> contracts
+Afternoon:               <span class="number">50</span> contracts
+Pyramid up only — never average down
+
+<span class="comment">// VIX-adjusted:</span>
+VIX &gt; 25 → SIZE_HALVE (50/25 contracts)
+VIX &gt; 30 → PENALTY_HIGH
+VIX &gt; 40 → HALT (no trading)
+</div>
+
+<h3>Flow Veto — The Only Validated Hard Gate</h3>
+
+<table class="weight-table">
+  <thead>
+    <tr><th>Parameter</th><th>Value</th><th>Effect</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Rule</td><td class="mono">contra &ge; 2 AND confirm == 0</td><td>Veto the trade entirely</td></tr>
+    <tr><td>Sources</td><td class="mono">FlashAlpha, Unusual Whales</td><td>Cross-validated flow signals</td></tr>
+    <tr><td>Validated PF lift</td><td class="mono positive">2.05 → 3.06</td><td>The ONLY empirically validated hard gate in the corpus</td></tr>
+  </tbody>
+</table>
+
+<div class="callout callout-green">
+  If any hard gate survives into the continuum, it should be this one — not the Greeks gate. The flow veto lifts PF from 2.05 to 3.06. It is the only binary gate with cross-validated, reproducible improvement across the entire State Registry.
+</div>
+
+<h3>GEX Regime Effect</h3>
+
+<table class="weight-table">
+  <thead>
+    <tr><th>Regime</th><th>Win Rate Adjustment</th><th>Tier</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Positive GEX + Breakout</td><td class="mono negative">−56.0%</td><td><span class="tier-badge tier-provisional">PROVISIONAL</span></td></tr>
+    <tr><td>Negative GEX + Momentum</td><td class="mono positive">+23.0%</td><td><span class="tier-badge tier-provisional">PROVISIONAL</span></td></tr>
+  </tbody>
+</table>
+
+<p>Positive GEX is bad for directional entries — gamma sessions are the primary source of losses. The ALMOS result explicitly contradicts the academic expectation of "positive dealer = high-confidence directional entry." Three independent sources agree: the Bayesian cheat sheet (−56%/+23%), gamma-gated ALMOS, and the confluence engine GEX semantics.</p>
+
+<!-- ============================================================ -->
+<h2 id="exits"><span class="section-num">07</span> Exit Doctrine: The Edge Is the Exit</h2>
+
+<p>The SEPARABILITY_FINDING (tier PROVISIONAL, from the Comprehensive Quantitative Audit): 96% of losing trades are statistically indistinguishable from winners at entry. Mahalanobis autopsy across 200 indicators, 16 conditions, 11 timeframes — two populations that are identical at t=0. The edge lives in what happens <em>after</em> entry: the exit ladder, the path classifier, the post-entry premium capture.</p>
+
+<h3>Exit Ladder (LOCKED)</h3>
+
+<div style="display:flex;flex-direction:column;gap:0.5rem;margin:1rem 0">
+  <div class="exit-ladder-row">
+    <div class="exit-ladder-label" style="color:var(--green)">TP1</div>
+    <div class="exit-ladder-bar" style="width:40%;background:var(--green)"></div>
+    <div class="exit-ladder-val">+22% → sell 40%</div>
+  </div>
+  <div class="exit-ladder-row">
+    <div class="exit-ladder-label" style="color:var(--blue)">TP2</div>
+    <div class="exit-ladder-bar" style="width:40%;background:var(--blue)"></div>
+    <div class="exit-ladder-val">+32% → sell 40%</div>
+  </div>
+  <div class="exit-ladder-row">
+    <div class="exit-ladder-label" style="color:var(--purple)">RUNNER_TRAIL</div>
+    <div class="exit-ladder-bar" style="width:10%;background:var(--purple)"></div>
+    <div class="exit-ladder-val">10% trails</div>
+  </div>
+  <div class="exit-ladder-row">
+    <div class="exit-ladder-label" style="color:var(--amber)">ARM_MFE</div>
+    <div class="exit-ladder-bar" style="width:13%;background:var(--amber)"></div>
+    <div class="exit-ladder-val">13% armed</div>
+  </div>
+  <div class="exit-ladder-row">
+    <div class="exit-ladder-label" style="color:var(--red)">ARMED_FLOOR</div>
+    <div class="exit-ladder-bar" style="width:9%;background:var(--red)"></div>
+    <div class="exit-ladder-val">8.88% floor</div>
+  </div>
+</div>
+
+<h3>Hold Time vs. Profit Factor (LOCKED)</h3>
+
+<table class="weight-table">
+  <thead>
+    <tr><th>Hold Window</th><th>PF</th><th>Assessment</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="mono">&le; 30s</td><td class="mono negative">0.240</td><td>Catastrophic — too fast to capture any edge</td></tr>
+    <tr><td class="mono">30–60s</td><td class="mono positive">2.415</td><td>Sweet spot — highest PF in the entire corpus</td></tr>
+    <tr><td class="mono">1–3 min</td><td class="mono" style="color:var(--amber)">1.206</td><td>Profitable but decaying</td></tr>
+  </tbody>
+</table>
+
+<div class="callout callout-red">
+  Trades held &le; 30 seconds have PF 0.240 — a 76% loss rate. The system destroys value by exiting too fast. The 30–60 second window is where the premium path develops enough for the exit ladder to function. The vel_120s predictor (the STRONGEST P&amp;L predictor in the State Registry) measures exactly this window: the 2-minute velocity after entry tells you whether the runner has legs.
+</div>
+
+<h3>Micro Quote Lean Exit</h3>
+
+<p>The primary real-time exit signal: when bid/ask size lean drops 0.40 below the pre-entry norm, it signals the micro-auction is turning. This single exit signal accounts for +$20,014 in the State Registry findings. It works because it measures the book directly — Tier 1 signal, no inference required.</p>
+
+<!-- ============================================================ -->
+<h2 id="invariants"><span class="section-num">08</span> System Invariants &amp; Non-Negotiables</h2>
+
+<div class="invariant">
+  <div class="invariant-num">1</div>
+  <div><strong>NO_HARD_PRICE_STOP.</strong> The obsolete −8% hard stop killed 61.8% of winning CALLs (V6 Unified). The "universal stop must be impossible." The system uses a wrapper floor of −13.5% <em>only if unavoidable</em>, never a fixed percentage stop. Exit by the ladder, the quote lean, the path classifier — never by a price level.</div>
+</div>
+
+<div class="invariant">
+  <div class="invariant-num">2</div>
+  <div><strong>OBJECTIVE_IS_PF_NOT_WIN_RATE.</strong> Win rate is vanity. PF is sanity. The 9-account live fleet runs 49.8% WR, PF 1.28 on 8,296 real round-trips. That 49.8% is the honest baseline — every backtest claiming 70%+ WR is suspect. Optimize for PF (Profit Factor = gross wins / gross losses) and expectancy ($/trade), never win rate.</div>
+</div>
+
+<div class="invariant">
+  <div class="invariant-num">3</div>
+  <div><strong>SAMPLE_FAST_DECIDE_SLOW.</strong> The system gathers data at machine speed (17,000 points/sec/asset) but makes decisions at human speed (one trade at a time, with gates). A sealed holdout is opened once — if n &lt; 30 per cell, the result is UNDERPOWERED and the look is burned. One failed configuration is one map cell, never a verdict.</div>
+</div>
+
+<h3>Refuted Ideas (Do Not Rebuild)</h3>
+
+<table class="weight-table">
+  <thead>
+    <tr><th>Concept</th><th>Why It Failed</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Round number magnetism</td><td>Statistically indistinguishable from zero at every time offset tested</td></tr>
+    <tr><td>Hard stop −8%</td><td>Killed 61.8% of winning CALLs</td></tr>
+    <tr><td>Stacked entry filters (16 conditions)</td><td>5 filters → 5 OOS trades, PF 0.16; none improved OOS without shrinking sample</td></tr>
+    <tr><td>Long straddle as edge</td><td>Variance risk premium costs −22.9%/month; bi-directional entry is a latency workaround</td></tr>
+    <tr><td>Optimistic level fills</td><td>Honest fills + 2bps slip → 680 trades at 28.7% WR, PF 0.15, −$73,479</td></tr>
+    <tr><td>Underlying return as options label</td><td>MFE/MAE are underlying-direction estimates, not option-premium extrema. Most repeated fatal error.</td></tr>
+  </tbody>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="benchmarks"><span class="section-num">09</span> Benchmarks: What Any New Engine Must Beat</h2>
+
+<table class="weight-table">
+  <thead>
+    <tr><th>Benchmark</th><th>WR</th><th>PF</th><th>Sample</th><th>Tier</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Aggregate 9-account LIVE fleet</strong></td>
+      <td class="mono">49.8%</td>
+      <td class="mono positive">1.28</td>
+      <td>8,296 real round-trips, $1,023,240</td>
+      <td><span class="tier-badge tier-locked">LOCKED</span></td>
+    </tr>
+    <tr>
+      <td>V6 HONEST engine</td>
+      <td class="mono">37.0%</td>
+      <td class="mono positive">1.13</td>
+      <td>1,010 trades, real ThetaData NBBO</td>
+      <td><span class="tier-badge tier-locked">LOCKED</span></td>
+    </tr>
+    <tr>
+      <td>HGTFC LIVE 1.08PF</td>
+      <td class="mono">39.4%</td>
+      <td class="mono" style="color:var(--amber)">1.08</td>
+      <td>246 paired trades, 15 QQQ sessions</td>
+      <td><span class="tier-badge tier-provisional">PROVISIONAL</span></td>
+    </tr>
+    <tr>
+      <td>Josh manual, 5 days logged</td>
+      <td class="mono">—</td>
+      <td class="mono positive">1.62</td>
+      <td>50 rounds, $462K → $608K (+31.5%)</td>
+      <td><span class="tier-badge tier-provisional">PROVISIONAL</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout">
+  The aggregate 9-account LIVE fleet is the number to beat: PF 1.28, 49.8% WR on $1,023,240. It is the largest real-money sample in the corpus by two orders of magnitude. Every other number is context; this one is ground truth.
+</div>
+
+<h3>Build Order (State Registry Section 16)</h3>
+
+<ol style="font-size:0.9rem;line-height:1.8">
+  <li><strong>Pull ThetaData 1s NBBO tick cache</strong> for SPY+QQQ 0DTE — nothing second-by-second is buildable until this exists (blocking dependency)</li>
+  <li><strong>Re-label every trade from REAL OPTION PREMIUM PATHS</strong> — underlying-return labels invalidate ~half the corpus</li>
+  <li><strong>Port V6 HONEST ENGINE verbatim</strong> — reproduce PF 1.13 before changing anything</li>
+  <li><strong>Build POST-ENTRY path classifier</strong> (30–120s window) — this is where the 96%-inseparability finding says the edge lives</li>
+  <li>Re-run 13-component / 6-room spectrum sweep against option premium labels</li>
+  <li>Re-run per-asset calibration against option premium labels</li>
+  <li>Replace every hard gate with continuous penalty EXCEPT the flow veto and circuit breakers</li>
+  <li>Add hierarchical state-key backoff (decision → RAG → index → phase)</li>
+  <li>Only then tune — every new weight must clear PROMOTION_REQUIREMENTS with a receipt</li>
+</ol>
+
+<hr>
+
+<div class="footer">
+  <p>FLUID ALIGNMENT DOCTRINE v1.0</p>
+  <p>Compiled from: CONTINUOUS_STATE_CONTINUUM (943 corpus files), HFT_MICROSTRUCTURE_RESEARCH (Manus AI),</p>
+  <p>Multi_Time-MINE_Stack, bayesian-risk-engine V1–V6, live Alpaca/Tradier forensics.</p>
+  <p>Evidence tiers: LOCKED (live real-money confirmed) · PROVISIONAL (backtested, awaiting OOS) · RESEARCH (single study) · REFUTED (dead)</p>
+  <p>This document is a reference for agents and systems operating within the MADX stack.</p>
+  <p>Every number has a source. No number is invented. [OTHER-AI] tag applies to any downstream inference.</p>
+</div>

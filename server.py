@@ -340,5 +340,13 @@ def serve_dashboard():
     raise HTTPException(status_code=404, detail="Dashboard not found")
 
 
+@app.get("/trading")
+def serve_trading():
+    trading_path = os.path.join(os.path.dirname(__file__), "trading.html")
+    if os.path.exists(trading_path):
+        return FileResponse(trading_path)
+    raise HTTPException(status_code=404, detail="Trading app not found")
+
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
